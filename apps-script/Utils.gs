@@ -11,11 +11,19 @@ function sheet_(key) {
   return sh;
 }
 
+/** Caché por ejecución: cada llamada del dashboard lee cada hoja una sola vez. */
+let TABLE_CACHE_ = {};
+function invalidate_(key) {
+  delete TABLE_CACHE_[key];
+  if (key === 'CONFIG') CONFIG_CACHE_ = null;
+}
+
 /** Devuelve las filas de una hoja como objetos {encabezado: valor, _row}. */
 function readTable_(key) {
+  if (TABLE_CACHE_[key]) return TABLE_CACHE_[key];
   const headers = SHEETS[key].headers;
   const values = sheet_(key).getDataRange().getValues();
-  return values.slice(1)
+  return TABLE_CACHE_[key] = values.slice(1)
     .map((r, i) => {
       const o = { _row: i + 2 };
       headers.forEach((h, j) => { o[h] = r[j] === undefined ? '' : r[j]; });
@@ -30,12 +38,14 @@ function appendRows_(key, objs) {
   const sh = sheet_(key);
   const rows = objs.map(o => headers.map(h => (o[h] === undefined || o[h] === null) ? '' : o[h]));
   sh.getRange(sh.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  invalidate_(key);
 }
 
 function setCell_(key, row, header, value) {
   const col = SHEETS[key].headers.indexOf(header) + 1;
   if (col < 1) throw new Error(`Columna "${header}" no existe en ${SHEETS[key].name}`);
   sheet_(key).getRange(row, col).setValue(value);
+  invalidate_(key);
 }
 
 let CONFIG_CACHE_ = null;

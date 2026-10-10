@@ -11,8 +11,17 @@ function abrirDashboard() {
   SpreadsheetApp.getUi().showModalDialog(html, APP.NAME);
 }
 
+/** Todo lo que pinta el dashboard en una sola llamada. */
 function getDashboardData(periodo) {
-  return calcularIndicadores(periodo);
+  const data = calcularIndicadores(periodo);
+  const conteos = {};
+  tablasCargables_().forEach(k => { conteos[k] = readTable_(k).length; });
+  return Object.assign(data, {
+    tendencia: tendencia_(data.periodo, 6),
+    conteos,
+    esquema: getEsquema(),
+    cargas: getCargas().slice(0, 10),
+  });
 }
 
 function getCatalogos() {

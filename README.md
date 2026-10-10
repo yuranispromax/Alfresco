@@ -14,13 +14,41 @@ Sistema de la **Dirección de Compras** montado sobre **Google Sheets + Apps Scr
 
 Cada indicador tiene **meta editable** en `Config` y semáforo: 🟢 cumple · 🟡 a ≤10% de la meta · 🔴 fuera.
 
+## El dashboard es la herramienta
+
+Se abre con **🛒 Compras › Abrir dashboard** (o como Web App). Arranca vacío: cada módulo muestra *"Aún no hay información"* y se activa a medida que se **adjunta** la información.
+
+| Pestaña | Uso |
+|---|---|
+| **Tablero** | 7 módulos (uno por iniciativa de la diapositiva): indicador, meta, semáforo, tendencia 6 meses, fuentes cargadas, botones **📎 Adjuntar información** y **Ver detalle** (gráficas + tablas) |
+| **Registros rápidos** | Rechazo con foto (→ Drive) y recepción contra OC (→ OTIF) |
+| **Historial de cargas** | Quién adjuntó qué archivo, cuántas filas y enlace al original en Drive |
+
+### Cómo se adjunta la información
+1. En el módulo, **📎 Adjuntar información** → elige la tabla (p. ej. *Ordenes Compra*, *Ventas*, *Presupuesto*).
+2. **⬇ Descargar plantilla Excel** (opcional) o usa el reporte del ERP tal cual.
+3. Arrastra el **Excel (.xlsx/.xls) o CSV**. El sistema detecta la fila de encabezados y reconoce columnas aunque cambien tildes, mayúsculas o nombres típicos (`Razón Social` → Proveedor, `No. Factura` → Factura, `Vencimiento` → Fecha Vencimiento, `SKU` → Código…).
+4. Revisa la vista previa: columnas reconocidas, obligatorias faltantes y primeras filas.
+5. **Cargar información** en modo *Agregar* o *Reemplazar toda la tabla*. El indicador se recalcula al instante y el archivo original queda en `Drive › Gestión de Compras Alfresco › Adjuntos › <tabla>`.
+
+| Módulo | Archivos que lo alimentan |
+|---|---|
+| 1 Proyectos | Proyectos |
+| 2 Compras / Ventas / Ppto | Ordenes Compra, Ventas, Presupuesto, Productos |
+| 3 Licitación y negociación | Negociaciones, Proveedores |
+| 4 Bodega de rechazos | Rechazos (o formulario) |
+| 5 Pagos | Pagos (cartera de tesorería) |
+| 6 OTIF | Entregas (o formulario de recepción), Ordenes Compra |
+| 7 Precios Pareto | Ordenes Compra, Productos (columna `Pareto = Sí`) |
+
 ## Arquitectura
 
 ```
-Google Sheet (base de datos) ──► Apps Script ──► Dashboard (diálogo / Web App)
-        ▲                             │      ├─► Gmail: alerta diaria, rechazos, comunicado NS
-        │                             │      ├─► Drive: carpeta del sistema + evidencias de rechazos
- Formularios web (rechazo, recepción) ┘      └─► KPI Historico ──► Looker Studio (opcional)
+Excel / CSV adjunto ─┐
+Formularios web ─────┼─► Apps Script ─► Google Sheet (base de datos) ─► Dashboard (diálogo / Web App)
+                     │        ├─► Drive: archivos originales + evidencias de rechazos
+                     │        ├─► Gmail: alerta diaria, rechazos, comunicado NS
+                     │        └─► KPI Historico ─► Looker Studio (opcional)
 ```
 
 | Archivo | Rol |
@@ -30,7 +58,8 @@ Google Sheet (base de datos) ──► Apps Script ──► Dashboard (diálogo
 | `Indicadores.gs` | Cálculo de los 7 KPI, hoja Dashboard, histórico mensual |
 | `Operaciones.gs` | Reglas OTIF, pagos, ahorro y columnas calculadas |
 | `Alertas.gs` | Correo diario, notificación de rechazos, comunicado de Paro de Entregas / NS |
-| `WebApp.gs` + `Dashboard.html` | Dashboard y formularios (rechazo con foto a Drive, recepción contra OC) |
+| `Importar.gs` | Carga de Excel/CSV: mapeo de columnas, conversión de tipos, archivo en Drive, historial |
+| `WebApp.gs` + `Dashboard.html` | Dashboard (Chart.js), adjuntar información (SheetJS), formularios |
 
 ## Instalación (10 minutos)
 
@@ -53,10 +82,10 @@ clasp push
 
 | Quién | Qué hace | Dónde |
 |---|---|---|
-| Compras | Registra OC, negociaciones, proyectos, proveedores alternos | Hojas directamente |
-| Bodega / Calidad | Registra recepciones (OTIF) y rechazos con foto | Dashboard › formularios |
-| Tesorería | Registra facturas y fecha de pago | Hoja `Pagos` |
-| Finanzas | Carga ventas y presupuesto mensual (`Periodo` = `2026-10`) | `Ventas`, `Presupuesto` |
+| Compras | Adjunta OC, negociaciones, proyectos, proveedores | Dashboard › 📎 Adjuntar |
+| Bodega / Calidad | Registra recepciones (OTIF) y rechazos con foto | Dashboard › Registros rápidos |
+| Tesorería | Adjunta la cartera (facturas y fecha de pago) | Dashboard › módulo 5 |
+| Finanzas | Adjunta ventas y presupuesto mensual (`Periodo` = `2026-10`) | Dashboard › módulo 2 |
 | Sistema | Recalcula, guarda histórico y envía alerta | Automático 7:00 a.m. |
 
 Acciones del menú:

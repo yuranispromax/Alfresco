@@ -80,5 +80,6 @@ function recalcularColumnas_() {
       rows.forEach((r, i) => { current[r._row - 2][0] = computed[i][h]; });
       sh.getRange(2, col, lastRow - 1, 1).setValues(current);
     });
+    invalidate_(key);
   });
 }

@@ -79,6 +79,10 @@ const SHEETS = {
     name: 'Comunicaciones',
     headers: ['Fecha', 'Tipo', 'Proveedor', 'Email', 'Asunto', 'Referencia'],
   },
+  CARGAS: {
+    name: 'Cargas',
+    headers: ['Fecha', 'Módulo', 'Tabla', 'Archivo', 'Filas', 'Modo', 'Usuario', 'Drive'],
+  },
   HISTORICO: {
     name: 'KPI Historico',
     headers: ['Periodo', 'Indicador', 'Valor', 'Meta', 'Semáforo', 'Actualizado'],
@@ -108,3 +112,76 @@ const DEFAULT_CONFIG = [
   ['CARPETA_DRIVE_ID', '', 'Se llena automáticamente al inicializar'],
   ['CARPETA_EVIDENCIAS_ID', '', 'Se llena automáticamente al inicializar'],
 ];
+
+/** Módulos del dashboard = iniciativas de la diapositiva de Dirección de Compras. */
+const MODULOS = [
+  {
+    id: 'proyectos', titulo: 'Proyectos nuevos',
+    iniciativa: 'Matriz de seguimiento y control para nuevos desarrollos y cambios o transiciones en materias primas o materiales de empaque.',
+    tablas: ['PROYECTOS'],
+  },
+  {
+    id: 'compras_ventas', titulo: 'Compras, rotación y presupuesto',
+    iniciativa: 'Conectar órdenes de compra, rotación real, activación e inactivación de productos y aprovisionamiento con el presupuesto. Construcción del ppto de compras.',
+    tablas: ['ORDENES', 'VENTAS', 'PRESUPUESTO', 'PRODUCTOS'],
+  },
+  {
+    id: 'ahorro', titulo: 'Licitación anual y negociación',
+    iniciativa: 'Licitación anual de proveedores MP y ME del Pareto de ventas. Ampliación de portafolio y proveeduría alterna obligatoria.',
+    tablas: ['NEGOCIACIONES', 'PROVEEDORES'],
+  },
+  {
+    id: 'rechazos', titulo: 'Bodega de rechazos',
+    iniciativa: 'Gestión de bodega de rechazos, verificación de rechazos y no conformidades, estandarización, comunicación y retroalimentación al proveedor.',
+    tablas: ['RECHAZOS'],
+  },
+  {
+    id: 'pagos', titulo: 'Cumplimiento de pagos',
+    iniciativa: 'Indicador de cumplimiento de pagos al proveedor y verificación de cartera para evitar paro de entregas; comunicado sobre afectación al NS.',
+    tablas: ['PAGOS'],
+  },
+  {
+    id: 'otif', titulo: 'OTIF proveedores',
+    iniciativa: 'Implementación de OTIF a proveedores: entregas completas y a tiempo.',
+    tablas: ['ENTREGAS', 'ORDENES'],
+  },
+  {
+    id: 'precios_pareto', titulo: 'Precios listado Pareto',
+    iniciativa: 'Control y seguimiento a la variación de precios del listado Pareto.',
+    tablas: ['ORDENES', 'PRODUCTOS'],
+  },
+];
+
+/** Columnas mínimas para aceptar un archivo adjunto en cada tabla. */
+const REQUERIDOS = {
+  PROYECTOS: ['Proyecto', 'Estado'],
+  PRODUCTOS: ['Código', 'Producto'],
+  PROVEEDORES: ['Proveedor'],
+  ORDENES: ['OC', 'Fecha', 'Código', 'Cantidad', 'Precio Unitario'],
+  PRESUPUESTO: ['Periodo', 'Presupuesto'],
+  VENTAS: ['Periodo', 'Ventas'],
+  NEGOCIACIONES: ['Fecha', 'Precio Anterior', 'Precio Negociado'],
+  ENTREGAS: ['Proveedor', 'Cantidad Pedida', 'Cantidad Recibida', 'Fecha Pactada', 'Fecha Real'],
+  RECHAZOS: ['Fecha', 'Proveedor', 'Cantidad'],
+  PAGOS: ['Factura', 'Proveedor', 'Fecha Vencimiento', 'Valor'],
+};
+
+/** Sinónimos frecuentes en reportes del ERP → columna del sistema. */
+const ALIAS = {
+  'OC': ['orden', 'ordencompra', 'ordendecompra', 'nooc', 'numerooc', 'numorden', 'po'],
+  'Código': ['codigo', 'cod', 'sku', 'referencia', 'ref', 'item', 'codigoproducto', 'material'],
+  'Producto': ['descripcion', 'nombreproducto', 'nombre', 'articulo'],
+  'Proveedor': ['razonsocial', 'nombreproveedor', 'tercero', 'vendor'],
+  'Cantidad': ['cant', 'unidades', 'qty'],
+  'Precio Unitario': ['precio', 'valorunitario', 'costounitario', 'vrunitario', 'preciounit'],
+  'Valor': ['monto', 'total', 'valorfactura', 'saldo', 'importe'],
+  'Factura': ['nofactura', 'numerofactura', 'documento', 'factura'],
+  'Fecha Vencimiento': ['vencimiento', 'fechavto', 'vence'],
+  'Fecha Pago': ['pago', 'fechadepago', 'pagado'],
+  'Fecha Pactada': ['fechacompromiso', 'fechaentregapactada', 'fechaprogramada'],
+  'Fecha Real': ['fecharecepcion', 'fecharecibo', 'fechaentrega', 'fecharecibido'],
+  'Cantidad Pedida': ['cantpedida', 'pedida', 'cantidadsolicitada', 'cantidadoc'],
+  'Cantidad Recibida': ['cantrecibida', 'recibida', 'cantidadentregada'],
+  'Ventas': ['venta', 'ventasnetas', 'ingresos'],
+  'Periodo': ['mes', 'periodo', 'fechaperiodo'],
+};

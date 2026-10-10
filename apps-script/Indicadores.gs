@@ -16,6 +16,9 @@ function calcularIndicadores(periodo) {
   const proyVencidos = proyectos
     .filter(p => p.Estado !== 'Concluido' && toDate_(p['Fecha Compromiso']) && toDate_(p['Fecha Compromiso']) < hoy)
     .map(p => ({ id: p.ID, proyecto: p.Proyecto, compromiso: fmtDate_(toDate_(p['Fecha Compromiso'])), avance: num_(p['Avance %']) }));
+  const proyectosEstado = {};
+  LISTAS.ESTADO_PROYECTO.forEach(e => { proyectosEstado[e] = 0; });
+  readTable_('PROYECTOS').forEach(p => { if (p.Estado in proyectosEstado) proyectosEstado[p.Estado]++; });
   kpis.push(kpi_('proyectos', 'Proyectos concluidos / Total', ratio_(concluidos, proyectos.length),
     cfg.META_PROYECTOS, 'pct', true, `${concluidos} de ${proyectos.length} · ${proyVencidos.length} vencidos`));
 
@@ -24,9 +27,10 @@ function calcularIndicadores(periodo) {
   const compras = sum_(ocs, o => num_(o.Cantidad) * num_(o['Precio Unitario']));
   const ventas = sum_(readTable_('VENTAS').filter(v => normPeriodo_(v.Periodo) === periodo), v => num_(v.Ventas));
   const ppto = sum_(readTable_('PRESUPUESTO').filter(p => normPeriodo_(p.Periodo) === periodo), p => num_(p.Presupuesto));
-  kpis.push(kpi_('compras_ventas', 'Participación Compras / Ventas', ratio_(compras, ventas),
+  kpis.push(Object.assign(kpi_('compras_ventas', 'Participación Compras / Ventas', ratio_(compras, ventas),
     cfg.META_COMPRAS_VENTAS, 'pct', false,
-    `Compras ${fmtMoney_(compras)} · Ventas ${fmtMoney_(ventas)} · Ejecución ppto ${fmtPct_(ratio_(compras, ppto))}`));
+    `Compras ${fmtMoney_(compras)} · Ventas ${fmtMoney_(ventas)} · Ejecución ppto ${fmtPct_(ratio_(compras, ppto))}`),
+  { extra: { compras, ventas, ppto } }));
 
   /* 3. Ahorro por negociación y variación de precio negociada */
   const negs = readTable_('NEGOCIACIONES').filter(n => enPeriodo(n.Fecha));
@@ -115,6 +119,7 @@ function calcularIndicadores(periodo) {
     variaciones,
     alertasPrecios,
     proyVencidos,
+    proyectosEstado,
     rechAbiertos,
     pagosCriticos,
   };
@@ -203,4 +208,18 @@ function guardarHistorico_(data) {
     else nuevos.push(fila);
   });
   if (nuevos.length) sh.getRange(sh.getLastRow() + 1, 1, nuevos.length, nuevos[0].length).setValues(nuevos);
+  invalidate_('HISTORICO');
+}
+
+/** Serie de los últimos n periodos por indicador (para las tendencias del dashboard). */
+function tendencia_(periodo, n) {
+  const periodos = [periodo];
+  while (periodos.length < n) periodos.unshift(prevPeriodo_(periodos[0]));
+  const serie = {};
+  periodos.forEach(p => {
+    calcularIndicadores(p).kpis.forEach(k => {
+      (serie[k.id] = serie[k.id] || []).push({ periodo: p, valor: k.valor, meta: k.meta, extra: k.extra || null });
+    });
+  });
+  return { periodos, serie };
 }
