@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --rojo:#c8102e; --rojo-2:#9e0b22; --verde:#2e9b3e; --amarillo:#f2b705; --gris:#a3a3a3;
+    --bg:#f4f4f1; --card:#ffffff; --txt:#1f1f1f; --mut:#6b6b6b; --line:#ececec;
+    --ok-bg:#e7f5e9; --warn-bg:#fff6d6; --bad-bg:#fde6e8; --nd-bg:#f0f0f0;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Segoe UI',Roboto,Arial,sans-serif; background:var(--bg); color:var(--txt); font-size:14px; }
+  button { font:inherit; cursor:pointer; }
+
+  /* Encabezado */
+  header { background:linear-gradient(120deg,var(--rojo),var(--rojo-2)); color:#fff; padding:14px 22px 0; }
+  .top { display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+  .logo { background:#fff; color:var(--rojo); font-weight:800; font-style:italic; border-radius:999px; padding:6px 14px; font-size:18px; border:3px solid var(--verde); }
+  .title h1 { margin:0; font-size:22px; letter-spacing:1px; }
+  .title p { margin:2px 0 0; opacity:.85; font-size:12px; }
+  .controls { margin-left:auto; display:flex; gap:8px; align-items:center; }
+  .controls input { border:0; border-radius:8px; padding:7px 10px; font:inherit; }
+  .btn { background:var(--rojo); color:#fff; border:0; border-radius:8px; padding:8px 14px; font-weight:600; }
+  .btn.light { background:#fff; color:var(--rojo); }
+  .btn.ghost { background:transparent; color:var(--rojo); border:1px solid var(--rojo); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  nav { display:flex; gap:2px; margin-top:12px; }
+  nav button { background:transparent; border:0; color:#fff; opacity:.8; padding:10px 16px; border-radius:8px 8px 0 0; font-weight:600; }
+  nav button.on { background:var(--bg); color:var(--rojo); opacity:1; }
+  .stripe { height:4px; background:linear-gradient(90deg,var(--verde) 0 33%,var(--amarillo) 33% 66%,var(--rojo) 66%); }
+  main { padding:18px 22px 40px; max-width:1500px; margin:auto; }
+  .hidden { display:none !important; }
+
+  /* Resumen */
+  .summary { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+  .chip { background:#fff; border-radius:999px; padding:6px 14px; font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.06); display:flex; gap:6px; align-items:center; }
+  .dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+  .verde .dot, .dot.verde { background:var(--verde); } .amarillo .dot, .dot.amarillo { background:var(--amarillo); }
+  .rojo .dot, .dot.rojo { background:var(--rojo); } .gris .dot, .dot.gris { background:var(--gris); }
+  .summary .upd { margin-left:auto; color:var(--mut); font-size:12px; }
+
+  /* Módulos */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(340px,1fr)); gap:14px; }
+  .mod { background:var(--card); border-radius:14px; padding:16px 18px 14px; box-shadow:0 1px 3px rgba(0,0,0,.07); display:flex; flex-direction:column; gap:10px; border-top:5px solid var(--gris); }
+  .mod.verde { border-top-color:var(--verde); } .mod.amarillo { border-top-color:var(--amarillo); } .mod.rojo { border-top-color:var(--rojo); }
+  .mod-head { display:flex; gap:10px; align-items:flex-start; }
+  .mod-head .n { background:var(--rojo); color:#fff; font-weight:700; width:26px; height:26px; border-radius:50%; display:grid; place-items:center; flex:none; font-size:13px; }
+  .mod-head h2 { font-size:15px; margin:2px 0 0; flex:1; }
+  .badge { font-size:11px; font-weight:700; padding:3px 8px; border-radius:999px; white-space:nowrap; }
+  .badge.verde { background:var(--ok-bg); color:#1b6b28; } .badge.amarillo { background:var(--warn-bg); color:#8a6400; }
+  .badge.rojo { background:var(--bad-bg); color:var(--rojo-2); } .badge.gris { background:var(--nd-bg); color:var(--mut); }
+  .ini { font-size:12px; color:var(--mut); margin:0; line-height:1.45; }
+  .kpi { display:flex; align-items:flex-end; justify-content:space-between; gap:10px; border-top:1px dashed var(--line); padding-top:10px; }
+  .kpi small { color:var(--mut); display:block; font-size:11px; text-transform:uppercase; letter-spacing:.3px; }
+  .kpi .nm { font-weight:600; font-size:13px; }
+  .kpi .val { font-size:28px; font-weight:800; line-height:1; text-align:right; }
+  .kpi .meta { font-size:11px; color:var(--mut); text-align:right; }
+  .spark { height:64px; }
+  .det { font-size:12px; margin:0; color:#333; }
+  .sources { display:flex; flex-wrap:wrap; gap:6px; }
+  .src { font-size:11px; padding:3px 8px; border-radius:6px; background:var(--nd-bg); color:var(--mut); }
+  .src.ok { background:var(--ok-bg); color:#1b6b28; }
+  .src.miss { background:var(--warn-bg); color:#8a6400; }
+  .acts { display:flex; gap:8px; margin-top:auto; }
+  .acts .btn { flex:1; padding:8px 10px; font-size:13px; }
+  .empty-mod { background:var(--nd-bg); border-radius:10px; padding:14px; text-align:center; color:var(--mut); font-size:12.5px; }
+
+  /* Tablas */
+  table { border-collapse:collapse; width:100%; font-size:12.5px; }
+  th { text-align:left; color:var(--mut); font-weight:600; border-bottom:2px solid var(--line); padding:7px 6px; white-space:nowrap; }
+  td { border-bottom:1px solid var(--line); padding:7px 6px; }
+  .empty { color:var(--mut); font-style:italic; padding:10px 0; }
+  .panel { background:#fff; border-radius:14px; padding:16px 18px; box-shadow:0 1px 3px rgba(0,0,0,.07); margin-bottom:14px; overflow:auto; }
+  .panel h3 { margin:0 0 10px; font-size:14px; color:var(--rojo); }
+
+  /* Modal */
+  .overlay { position:fixed; inset:0; background:rgba(20,20,20,.45); display:flex; align-items:flex-start; justify-content:center; padding:30px 14px; overflow:auto; z-index:10; }
+  .modal { background:#fff; border-radius:14px; width:min(980px,100%); padding:20px 22px; box-shadow:0 10px 40px rgba(0,0,0,.25); }
+  .modal-head { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .modal-head h2 { margin:0; font-size:18px; flex:1; }
+  .x { background:none; border:0; font-size:22px; color:var(--mut); }
+  .chart-lg { height:260px; margin-bottom:14px; }
+  .two { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+
+  /* Formularios */
+  label { font-size:12px; color:var(--mut); display:flex; flex-direction:column; gap:4px; }
+  input, select, textarea { font:inherit; padding:8px 10px; border:1px solid #d5d5d5; border-radius:8px; background:#fff; color:var(--txt); }
+  .form { display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+  .form .full { grid-column:1/-1; }
+  .radio { flex-direction:row; align-items:center; gap:14px; color:var(--txt); font-size:13px; }
+  .radio label { flex-direction:row; align-items:center; gap:6px; color:var(--txt); font-size:13px; }
+  .drop { border:2px dashed #d0d0d0; border-radius:12px; padding:22px; text-align:center; color:var(--mut); background:#fafafa; cursor:pointer; }
+  .drop.over { border-color:var(--rojo); background:var(--bad-bg); }
+  .req { font-size:12px; background:#fafafa; border-radius:8px; padding:10px 12px; line-height:1.6; }
+  .req code { background:#fff; border:1px solid var(--line); border-radius:4px; padding:1px 5px; font-size:11.5px; }
+  .map td.ok { color:#1b6b28; font-weight:600; } .map td.no { color:var(--mut); }
+  .msg { padding:10px 12px; border-radius:8px; margin:10px 0; font-size:13px; }
+  .msg.ok { background:var(--ok-bg); color:#1b5e20; } .msg.err { background:var(--bad-bg); color:var(--rojo-2); } .msg.info { background:#eef4ff; color:#1f3d7a; }
+  .card-form { background:#fff; border-radius:14px; padding:18px; box-shadow:0 1px 3px rgba(0,0,0,.07); max-width:780px; }
+  .loading { position:fixed; right:18px; bottom:18px; background:#222; color:#fff; padding:10px 14px; border-radius:8px; font-size:13px; z-index:20; }
+
+  @media (max-width:700px) {
+    .form, .two { grid-template-columns:1fr; }
+    .controls { margin-left:0; width:100%; }
+    main { padding:14px 16px 30px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <span class="logo">al'fresco</span>
+    <div class="title"><h1>GESTIÓN DE COMPRAS</h1><p>Dirección · Tablero de indicadores</p></div>
+    <div class="controls">
+      <input type="month" id="periodo" aria-label="Periodo">
+      <button class="btn light" id="recargar">Actualizar</button>
+    </div>
+  </div>
+  <nav>
+    <button data-tab="tablero" class="on">Tablero</button>
+    <button data-tab="registros">Registros rápidos</button>
+    <button data-tab="cargas">Historial de cargas</button>
+  </nav>
+</header>
+<div class="stripe"></div>
+
+<main>
+  <!-- TABLERO -->
+  <section id="tab-tablero">
+    <div class="summary" id="summary"></div>
+    <div class="grid" id="modulos"></div>
+  </section>
+
+  <!-- REGISTROS RÁPIDOS -->
+  <section id="tab-registros" class="hidden">
+    <div class="two">
+      <div class="card-form">
+        <h3 style="margin-top:0;color:var(--rojo)">Registrar rechazo</h3>
+        <div id="msg-rechazo"></div>
+        <form id="f-rechazo" class="form">
+          <label>Fecha<input type="date" name="fecha" required></label>
+          <label>Proveedor<select name="proveedor" required></select></label>
+          <label>Material<select name="codigo" required></select></label>
+          <label>Lote<input name="lote"></label>
+          <label>Cantidad rechazada<input type="number" step="any" min="0" name="cantidad" required></label>
+          <label>Costo unitario (vacío = precio base)<input type="number" step="any" min="0" name="costoUnitario"></label>
+          <label>Motivo<select name="motivo" required></select></label>
+          <label>Evidencia (foto / PDF)<input type="file" name="archivo" accept="image/*,application/pdf"></label>
+          <label class="full">Descripción de la no conformidad<textarea name="descripcion" rows="3"></textarea></label>
+          <div class="full"><button class="btn" type="submit">Guardar rechazo</button></div>
+        </form>
+      </div>
+      <div class="card-form">
+        <h3 style="margin-top:0;color:var(--rojo)">Registrar recepción (OTIF)</h3>
+        <div id="msg-recepcion"></div>
+        <form id="f-recepcion" class="form">
+          <label class="full">Orden de compra<select name="oc" required></select></label>
+          <label>Cantidad recibida<input type="number" step="any" min="0" name="cantidadRecibida" required></label>
+          <label>Fecha real de entrega<input type="date" name="fechaReal" required></label>
+          <div class="full" id="oc-info" style="font-size:12px;color:var(--mut)"></div>
+          <div class="full"><button class="btn" type="submit">Registrar recepción</button></div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORIAL -->
+  <section id="tab-cargas" class="hidden">
+    <div class="panel"><h3>Información adjuntada</h3><div id="cargas"></div></div>
+  </section>
+</main>
+
+<!-- MODAL DETALLE -->
+<div class="overlay hidden" id="ov-detalle">
+  <div class="modal">
+    <div class="modal-head"><h2 id="det-titulo"></h2><button class="x" data-close>×</button></div>
+    <div class="chart-lg"><canvas id="det-tendencia"></canvas></div>
+    <div id="det-cuerpo"></div>
+  </div>
+</div>
+
+<!-- MODAL ADJUNTAR -->
+<div class="overlay hidden" id="ov-carga">
+  <div class="modal">
+    <div class="modal-head"><h2 id="carga-titulo">Adjuntar información</h2><button class="x" data-close>×</button></div>
+    <div class="form">
+      <label>¿Qué información vas a adjuntar?<select id="carga-tabla"></select></label>
+      <label>Modo
+        <select id="carga-modo">
+          <option value="agregar">Agregar a lo existente</option>
+          <option value="reemplazar">Reemplazar toda la tabla</option>
+        </select>
+      </label>
+      <div class="full req" id="carga-req"></div>
+      <div class="full drop" id="drop">📎 Arrastra aquí el Excel / CSV o <u>haz clic para seleccionarlo</u>
+        <input type="file" id="carga-file" accept=".xlsx,.xls,.csv" class="hidden">
+      </div>
+      <label class="full hidden" id="hoja-wrap">Hoja del archivo<select id="carga-hoja"></select></label>
+    </div>
+    <div id="carga-msg"></div>
+    <div id="carga-preview"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button class="btn ghost" data-close>Cancelar</button>
+      <button class="btn" id="carga-ok" disabled>Cargar información</button>
+    </div>
+  </div>
+</div>
+
+<div class="loading hidden" id="loading">Cargando…</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const $$ = s => Array.from(document.querySelectorAll(s));
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const money = n => '$' + Math.round(n || 0).toLocaleString('es-CO');
+  const moneyShort = n => Math.abs(n) >= 1e6 ? '$' + (n / 1e6).toFixed(1).replace('.', ',') + ' M' : money(n);
+  const pct = n => (n === null || n === undefined) ? '—' : (n * 100).toFixed(1).replace('.', ',') + '%';
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  const MESES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+  const mesCorto = p => MESES[+p.slice(5, 7) - 1] + ' ' + p.slice(2, 4);
+  const COLOR = { verde:'#2e9b3e', amarillo:'#f2b705', rojo:'#c8102e', gris:'#a3a3a3' };
+  const ETIQUETA = { verde:'EN META', amarillo:'EN ALERTA', rojo:'FUERA DE META', gris:'SIN DATOS' };
+  const hoy = new Date();
+  const charts = {};
+  let D = null, catalogos = null;
+
+  function loading(on, txt) { $('#loading').textContent = txt || 'Cargando…'; $('#loading').classList.toggle('hidden', !on); }
+  function call(fn, ...args) {
+    return new Promise((res, rej) => google.script.run.withSuccessHandler(res).withFailureHandler(rej)[fn](...args));
+  }
+  function chart(id, canvas, cfg) {
+    if (charts[id]) charts[id].destroy();
+    charts[id] = new Chart(canvas, cfg);
+  }
+  function fmt(k, v) { return v === null || v === undefined ? '—' : k.formato === 'money' ? moneyShort(v) : pct(v); }
+  function tabla(headers, rows) {
+    if (!rows.length) return '<p class="empty">Sin registros</p>';
+    return '<table><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>' +
+      rows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</table>';
+  }
+
+  /* ---------- Navegación ---------- */
+  $$('nav button').forEach(b => b.onclick = () => {
+    $$('nav button').forEach(x => x.classList.toggle('on', x === b));
+    $$('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + b.dataset.tab));
+    if (b.dataset.tab === 'registros' && !catalogos) cargarCatalogos();
+    if (b.dataset.tab === 'cargas') call('getCargas').then(renderCargas);
+  });
+  $$('[data-close]').forEach(b => b.onclick = () => b.closest('.overlay').classList.add('hidden'));
+  $$('.overlay').forEach(o => o.onclick = e => { if (e.target === o) o.classList.add('hidden'); });
+
+  /* ---------- Tablero ---------- */
+  $('#periodo').value = ymd(hoy).slice(0, 7);
+  $('#periodo').onchange = cargar;
+  $('#recargar').onclick = cargar;
+
+  function cargar() {
+    loading(true, 'Calculando indicadores…');
+    call('getDashboardData', $('#periodo').value)
+      .then(d => { D = d; render(); })
+      .catch(e => alert('Error: ' + e.message))
+      .finally(() => loading(false));
+  }
+
+  function render() {
+    const kpi = id => D.kpis.find(k => k.id === id);
+    const cuenta = s => D.kpis.filter(k => k.semaforo === s).length;
+    $('#summary').innerHTML =
+      ['verde', 'amarillo', 'rojo', 'gris'].map(s => `<span class="chip ${s}"><span class="dot"></span>${cuenta(s)} ${ETIQUETA[s].toLowerCase()}</span>`).join('') +
+      `<span class="upd">Periodo ${mesCorto(D.periodo)} · actualizado ${esc(D.generado)}</span>`;
+
+    $('#modulos').innerHTML = D.esquema.modulos.map((m, i) => {
+      const k = kpi(m.id);
+      const fuentes = m.tablas.map(t => {
+        const n = D.conteos[t];
+        return `<span class="src ${n ? 'ok' : 'miss'}">${esc(D.esquema.tablas[t].nombre)} · ${n ? n + ' reg.' : 'sin datos'}</span>`;
+      }).join('');
+      const sinDatos = m.tablas.every(t => !D.conteos[t]);
+      return `
+      <article class="mod ${k.semaforo}">
+        <div class="mod-head"><span class="n">${i + 1}</span><h2>${esc(m.titulo)}</h2><span class="badge ${k.semaforo}">${ETIQUETA[k.semaforo]}</span></div>
+        <p class="ini">${esc(m.iniciativa)}</p>
+        <div class="kpi">
+          <div><small>Indicador</small><span class="nm">${esc(k.nombre)}</span></div>
+          <div><div class="val" style="color:${k.semaforo === 'gris' ? 'var(--gris)' : COLOR[k.semaforo]}">${esc(k.valorTxt)}</div><div class="meta">Meta ${esc(k.metaTxt)}</div></div>
+        </div>
+        ${sinDatos ? '<div class="empty-mod">Aún no hay información. Adjunta el archivo para activar este indicador.</div>'
+                   : `<div class="spark"><canvas id="sp-${m.id}"></canvas></div><p class="det">${esc(k.detalle)}</p>`}
+        <div class="sources">${fuentes}</div>
+        <div class="acts">
+          <button class="btn" data-adjuntar="${m.id}">📎 Adjuntar información</button>
+          <button class="btn ghost" data-detalle="${m.id}" ${sinDatos ? 'disabled' : ''}>Ver detalle</button>
+        </div>
+      </article>`;
+    }).join('');
+
+    D.esquema.modulos.forEach(m => {
+      const cv = document.getElementById('sp-' + m.id);
+      if (!cv) return;
+      const k = kpi(m.id), serie = D.tendencia.serie[m.id];
+      chart('sp-' + m.id, cv, {
+        type: 'line',
+        data: { labels: D.tendencia.periodos.map(mesCorto), datasets: [
+          { data: serie.map(s => s.valor), borderColor: COLOR[k.semaforo], backgroundColor: COLOR[k.semaforo] + '22', fill: true, tension: .35, pointRadius: 2, spanGaps: true },
+          { data: serie.map(s => s.meta), borderColor: '#999', borderDash: [4, 4], pointRadius: 0, borderWidth: 1 },
+        ]},
+        options: { maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => fmt(k, c.parsed.y) } } },
+          scales: { x: { ticks: { font: { size: 10 } }, grid: { display: false } }, y: { display: false } } },
+      });
+    });
+
+    $$('[data-adjuntar]').forEach(b => b.onclick = () => abrirCarga(b.dataset.adjuntar));
+    $$('[data-detalle]').forEach(b => b.onclick = () => abrirDetalle(b.dataset.detalle));
+  }
+
+  /* ---------- Detalle por módulo ---------- */
+  function abrirDetalle(id) {
+    const m = D.esquema.modulos.find(x => x.id === id), k = D.kpis.find(x => x.id === id);
+    const serie = D.tendencia.serie[id], labels = D.tendencia.periodos.map(mesCorto);
+    $('#det-titulo').innerHTML = `${esc(m.titulo)} <span class="badge ${k.semaforo}">${esc(k.valorTxt)} · meta ${esc(k.metaTxt)}</span>`;
+    $('#ov-detalle').classList.remove('hidden');
+
+    const datasets = id === 'compras_ventas'
+      ? [ { type: 'bar', label: 'Compras', data: serie.map(s => s.extra && s.extra.compras), backgroundColor: COLOR.rojo, yAxisID: 'm' },
+          { type: 'bar', label: 'Ventas', data: serie.map(s => s.extra && s.extra.ventas), backgroundColor: COLOR.verde, yAxisID: 'm' },
+          { type: 'bar', label: 'Presupuesto', data: serie.map(s => s.extra && s.extra.ppto), backgroundColor: COLOR.amarillo, yAxisID: 'm' },
+          { type: 'line', label: 'Compras / Ventas', data: serie.map(s => s.valor), borderColor: '#333', yAxisID: 'p', tension: .3 } ]
+      : [ { type: k.formato === 'money' ? 'bar' : 'line', label: k.nombre, data: serie.map(s => s.valor), borderColor: COLOR.rojo, backgroundColor: COLOR.rojo + 'cc', tension: .3, spanGaps: true },
+          { type: 'line', label: 'Meta', data: serie.map(s => s.meta), borderColor: '#888', borderDash: [5, 5], pointRadius: 0 } ];
+    const scales = id === 'compras_ventas'
+      ? { m: { position: 'left', ticks: { callback: v => moneyShort(v) } }, p: { position: 'right', grid: { display: false }, ticks: { callback: v => pct(v) } } }
+      : { y: { ticks: { callback: v => fmt(k, v) } } };
+    chart('det', $('#det-tendencia'), { type: 'bar', data: { labels, datasets }, options: { maintainAspectRatio: false, scales,
+      plugins: { tooltip: { callbacks: { label: c => c.dataset.label + ': ' + (c.dataset.yAxisID === 'm' ? money(c.parsed.y) : fmt(k, c.parsed.y)) } } } } });
+
+    const cuerpo = $('#det-cuerpo');
+    const bloques = {
+      proyectos: () => `<div class="two"><div style="height:220px"><canvas id="det-x"></canvas></div><div><h3>Proyectos vencidos</h3>${tabla(['ID','Proyecto','Compromiso','Avance'], D.proyVencidos.map(p => [esc(p.id), esc(p.proyecto), p.compromiso, pct(p.avance)]))}</div></div>`,
+      compras_ventas: () => `<p class="det">${esc(k.detalle)}</p>`,
+      ahorro: () => `<p class="det">${esc(k.detalle)}</p>`,
+      rechazos: () => `<h3>Rechazos sin cerrar</h3>` + tabla(['ID','Proveedor','Material','Costo','Estado','Días'], D.rechAbiertos.map(r => [esc(r.id), esc(r.proveedor), esc(r.codigo), money(r.costo), esc(r.estado), r.dias])),
+      pagos: () => `<h3>Facturas vencidas / por vencer</h3>` + tabla(['Factura','Proveedor','Valor','Vence','Estado'], D.pagosCriticos.map(p => [esc(p.factura), esc(p.proveedor), money(p.valor), p.vence, p.estado === 'Vencida' ? `<b style="color:var(--rojo)">Vencida · ${p.mora} d</b>` : 'Por vencer'])),
+      otif: () => `<div style="height:240px"><canvas id="det-x"></canvas></div>` + tabla(['Proveedor','Entregas','A tiempo','Completas','OTIF'], D.otifProveedores.map(p => [esc(p.proveedor), p.entregas, p.aTiempo, p.completas, pct(p.pct)])),
+      precios_pareto: () => `<div style="height:240px"><canvas id="det-x"></canvas></div>` + tabla(['Código','Producto','Anterior','Actual','Variación'], D.variaciones.map(v => [esc(v.codigo), esc(v.producto), money(v.anterior), money(v.actual), `<b style="color:${v.variacion > 0 ? 'var(--rojo)' : 'var(--verde)'}">${pct(v.variacion)}</b>`])),
+    };
+    cuerpo.innerHTML = '<div class="panel" style="box-shadow:none;padding:0">' + bloques[id]() + '</div>';
+
+    const x = document.getElementById('det-x');
+    if (id === 'proyectos') chart('det-x', x, { type: 'doughnut', data: { labels: Object.keys(D.proyectosEstado), datasets: [{ data: Object.values(D.proyectosEstado), backgroundColor: ['#a3a3a3', COLOR.amarillo, COLOR.verde, COLOR.rojo] }] }, options: { maintainAspectRatio: false } });
+    if (id === 'otif') chart('det-x', x, { type: 'bar', data: { labels: D.otifProveedores.map(p => p.proveedor), datasets: [{ label: 'OTIF', data: D.otifProveedores.map(p => p.pct), backgroundColor: D.otifProveedores.map(p => p.pct >= (k.meta || 0) ? COLOR.verde : COLOR.rojo) }] }, options: { indexAxis: 'y', maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { max: 1, ticks: { callback: v => pct(v) } } } } });
+    if (id === 'precios_pareto') chart('det-x', x, { type: 'bar', data: { labels: D.variaciones.map(v => v.producto || v.codigo), datasets: [{ label: 'Variación', data: D.variaciones.map(v => v.variacion), backgroundColor: D.variaciones.map(v => v.variacion > 0 ? COLOR.rojo : COLOR.verde) }] }, options: { maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { y: { ticks: { callback: v => pct(v) } } } } });
+  }
+
+  /* ---------- Adjuntar información ---------- */
+  let archivo = null, libro = null, matriz = null, moduloActual = null;
+
+  function abrirCarga(moduloId) {
+    moduloActual = D.esquema.modulos.find(m => m.id === moduloId);
+    $('#carga-titulo').textContent = 'Adjuntar información · ' + moduloActual.titulo;
+    $('#carga-tabla').innerHTML = moduloActual.tablas.map(t => `<option value="${t}">${esc(D.esquema.tablas[t].nombre)}</option>`).join('');
+    resetCarga();
+    pintarRequisitos();
+    $('#ov-carga').classList.remove('hidden');
+  }
+
+  function resetCarga() {
+    archivo = libro = matriz = null;
+    $('#carga-file').value = '';
+    $('#carga-msg').innerHTML = $('#carga-preview').innerHTML = '';
+    $('#hoja-wrap').classList.add('hidden');
+    $('#carga-ok').disabled = true;
+  }
+
+  function pintarRequisitos() {
+    const t = D.esquema.tablas[$('#carga-tabla').value];
+    const listas = Object.keys(t.listas).map(h => `<code>${esc(h)}</code>: ${t.listas[h].map(esc).join(' / ')}`).join('<br>');
+    $('#carga-req').innerHTML =
+      `<b>Obligatorias:</b> ${t.requeridos.map(h => `<code>${esc(h)}</code>`).join(' ')}<br>` +
+      `<b>Opcionales:</b> ${t.headers.filter(h => !t.requeridos.includes(h)).map(h => `<code>${esc(h)}</code>`).join(' ')}` +
+      (listas ? `<br><b>Valores permitidos</b><br>${listas}` : '') +
+      `<br><span style="color:var(--mut)">Actualmente: ${t.filas} registros · Las columnas se reconocen aunque cambien tildes, mayúsculas o nombres comunes del ERP.</span>` +
+      `<br><a href="#" id="plantilla">⬇ Descargar plantilla Excel</a>`;
+    $('#plantilla').onclick = e => { e.preventDefault(); descargarPlantilla(t); };
+  }
+  $('#carga-tabla').onchange = () => { pintarRequisitos(); if (matriz) previsualizar(); };
+
+  function descargarPlantilla(t) {
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([t.headers]), t.nombre.slice(0, 31));
+    const info = [['Columna', 'Obligatoria', 'Valores permitidos']].concat(t.headers.map(h => [h, t.requeridos.includes(h) ? 'Sí' : '', (t.listas[h] || []).join(' / ')]));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(info), 'Instrucciones');
+    XLSX.writeFile(wb, `Plantilla_${t.nombre.replace(/\s+/g, '_')}.xlsx`);
+  }
+
+  const drop = $('#drop');
+  drop.onclick = () => $('#carga-file').click();
+  drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+  drop.ondragleave = () => drop.classList.remove('over');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); if (e.dataTransfer.files[0]) leer(e.dataTransfer.files[0]); };
+  $('#carga-file').onchange = e => { if (e.target.files[0]) leer(e.target.files[0]); };
+  $('#carga-hoja').onchange = () => { matriz = hojaAMatriz(libro.Sheets[$('#carga-hoja').value]); previsualizar(); };
+
+  function leer(file) {
+    if (file.size > 15 * 1024 * 1024) return msgCarga('err', 'El archivo supera 15 MB.');
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const bytes = new Uint8Array(r.result);
+        libro = XLSX.read(bytes, { type: 'array', cellDates: true });
+        let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+        archivo = { nombre: file.name, tipo: file.type, data: btoa(bin) };
+        $('#carga-hoja').innerHTML = libro.SheetNames.map(n => `<option>${esc(n)}</option>`).join('');
+        $('#hoja-wrap').classList.toggle('hidden', libro.SheetNames.length < 2);
+        drop.innerHTML = `📄 <b>${esc(file.name)}</b> · clic para cambiar`;
+        matriz = hojaAMatriz(libro.Sheets[libro.SheetNames[0]]);
+        previsualizar();
+      } catch (e) { msgCarga('err', 'No se pudo leer el archivo: ' + e.message); }
+    };
+    r.readAsArrayBuffer(file);
+  }
+
+  /** Matriz de la hoja: busca la fila de encabezados y convierte fechas a 'yyyy-mm-dd'. */
+  function hojaAMatriz(ws) {
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '' })
+      .map(r => r.map(c => c instanceof Date ? ymd(new Date(c.getTime() + 43200000)) : c));
+    const iHdr = rows.findIndex(r => r.filter(c => String(c).trim() !== '').length >= 2);
+    if (iHdr < 0) return { encabezados: [], filas: [] };
+    return { encabezados: rows[iHdr].map(c => String(c).trim()), filas: rows.slice(iHdr + 1).filter(r => r.some(c => String(c).trim() !== '')) };
+  }
+
+  function msgCarga(tipo, html) { $('#carga-msg').innerHTML = `<div class="msg ${tipo}">${html}</div>`; }
+
+  function previsualizar() {
+    const tabla_ = $('#carga-tabla').value;
+    $('#carga-ok').disabled = true;
+    if (!matriz.encabezados.length) return msgCarga('err', 'No se encontró una fila de encabezados en el archivo.');
+    call('previsualizarCarga', tabla_, matriz.encabezados).then(p => {
+      const filasMap = matriz.encabezados.map((h, i) => [esc(h || '(vacía)'), p.mapa[i] ? `<span class="ok">✔ ${esc(p.mapa[i])}</span>` : '<span class="no">— se ignora</span>']);
+      const muestra = matriz.filas.slice(0, 5);
+      const cols = matriz.encabezados.map((h, i) => i).filter(i => p.mapa[i]);
+      $('#carga-preview').innerHTML = `
+        <div class="two" style="margin-top:12px">
+          <div class="panel" style="box-shadow:none;border:1px solid var(--line)"><h3>Columnas reconocidas</h3><table class="map">${filasMap.map(r => `<tr><td>${r[0]}</td><td class="${r[1].includes('✔') ? 'ok' : 'no'}">${r[1]}</td></tr>`).join('')}</table></div>
+          <div class="panel" style="box-shadow:none;border:1px solid var(--line)"><h3>Vista previa (${matriz.filas.length} filas)</h3>
+            ${tabla(cols.map(i => esc(p.mapa[i])), muestra.map(r => cols.map(i => esc(r[i]))))}</div>
+        </div>`;
+      if (p.faltantes.length) return msgCarga('err', `Faltan columnas obligatorias: <b>${p.faltantes.map(esc).join(', ')}</b>. Renómbralas en el archivo o usa la plantilla.`);
+      msgCarga('info', `Listo para cargar <b>${matriz.filas.length}</b> filas en <b>${esc(D.esquema.tablas[tabla_].nombre)}</b>. El archivo original quedará archivado en Drive.`);
+      $('#carga-ok').disabled = false;
+    }).catch(e => msgCarga('err', esc(e.message)));
+  }
+
+  $('#carga-ok').onclick = () => {
+    const modo = $('#carga-modo').value;
+    if (modo === 'reemplazar' && !confirm('Se borrarán los registros actuales de la tabla y se reemplazarán por el archivo. ¿Continuar?')) return;
+    $('#carga-ok').disabled = true;
+    loading(true, 'Cargando información…');
+    call('cargarDatos', { tabla: $('#carga-tabla').value, modo, encabezados: matriz.encabezados, filas: matriz.filas, archivo, modulo: moduloActual.titulo, periodo: $('#periodo').value })
+      .then(r => {
+        msgCarga('ok', `✅ ${r.filas} filas cargadas en <b>${esc(r.tabla)}</b>.` + (r.ignoradas.length ? ` Columnas ignoradas: ${r.ignoradas.map(esc).join(', ')}.` : ''));
+        $('#carga-preview').innerHTML = '';
+        drop.innerHTML = '📎 Arrastra aquí otro archivo o <u>haz clic para seleccionarlo</u>';
+        catalogos = null;
+        cargar();
+      })
+      .catch(e => { msgCarga('err', esc(e.message)); $('#carga-ok').disabled = false; })
+      .finally(() => loading(false));
+  };
+
+  /* ---------- Historial ---------- */
+  function renderCargas(c) {
+    $('#cargas').innerHTML = tabla(['Fecha', 'Módulo', 'Tabla', 'Archivo', 'Filas', 'Modo', 'Usuario'],
+      c.map(x => [esc(x.fecha), esc(x.modulo), esc(x.tabla), x.drive ? `<a href="${esc(x.drive)}" target="_blank">${esc(x.archivo)}</a>` : esc(x.archivo), x.filas, esc(x.modo), esc(x.usuario)]));
+  }
+
+  /* ---------- Registros rápidos ---------- */
+  function cargarCatalogos() {
+    call('getCatalogos').then(c => {
+      catalogos = c;
+      const opts = (arr, val, txt) => '<option value="">— seleccionar —</option>' + arr.map(x => `<option value="${esc(val(x))}">${esc(txt(x))}</option>`).join('');
+      const fr = $('#f-rechazo');
+      fr.proveedor.innerHTML = opts(c.proveedores, x => x, x => x);
+      fr.codigo.innerHTML = opts(c.productos, x => x.codigo, x => `${x.codigo} · ${x.nombre}`);
+      fr.motivo.innerHTML = opts(c.motivos, x => x, x => x);
+      $('#f-recepcion').oc.innerHTML = opts(c.ordenesAbiertas, x => x.oc, x => `${x.oc} · ${x.proveedor} · ${x.producto} (${x.cantidad})`);
+    });
+  }
+
+  $('#f-recepcion').oc.onchange = e => {
+    const o = catalogos && catalogos.ordenesAbiertas.find(x => x.oc === e.target.value);
+    $('#oc-info').textContent = o ? `Pedido: ${o.cantidad} · Fecha pactada: ${o.pactada}` : '';
+    if (o) $('#f-recepcion').cantidadRecibida.value = o.cantidad;
+  };
+
+  function msg(sel, ok, text) { $(sel).innerHTML = `<div class="msg ${ok ? 'ok' : 'err'}">${esc(text)}</div>`; }
+
+  function leerAdjunto(file) {
+    return new Promise((res, rej) => {
+      if (!file) return res(null);
+      if (file.size > 10 * 1024 * 1024) return rej(new Error('El archivo supera 10 MB'));
+      const r = new FileReader();
+      r.onload = () => res({ nombre: file.name, tipo: file.type, data: r.result.split(',')[1] });
+      r.onerror = () => rej(r.error);
+      r.readAsDataURL(file);
+    });
+  }
+
+  $('#f-rechazo').onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button');
+    btn.disabled = true;
+    try {
+      const data = Object.fromEntries(new FormData(f));
+      data.archivo = await leerAdjunto(f.archivo.files[0]);
+      const r = await call('registrarRechazo', data);
+      msg('#msg-rechazo', true, `Rechazo ${r.id} registrado${r.evidencia ? ' con evidencia en Drive' : ''}.`);
+      f.reset(); f.fecha.value = ymd(hoy); cargar();
+    } catch (err) { msg('#msg-rechazo', false, err.message); }
+    btn.disabled = false;
+  };
+
+  $('#f-recepcion').onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button');
+    btn.disabled = true;
+    try {
+      const r = await call('registrarRecepcion', Object.fromEntries(new FormData(f)));
+      msg('#msg-recepcion', true, `Recepción registrada · A tiempo: ${r.aTiempo} · Completa: ${r.completa} · OTIF: ${r.otif}`);
+      f.reset(); f.fechaReal.value = ymd(hoy); $('#oc-info').textContent = ''; cargarCatalogos(); cargar();
+    } catch (err) { msg('#msg-recepcion', false, err.message); }
+    btn.disabled = false;
+  };
+
+  $('#f-rechazo').fecha.value = ymd(hoy);
+  $('#f-recepcion').fechaReal.value = ymd(hoy);
+  cargar();
+</script>
+</body>
+</html>
