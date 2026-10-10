@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta charset="utf-8">
+<style>
+  :root { --rojo:#c8102e; --verde:#2e9b3e; --amarillo:#f2b705; --gris:#9e9e9e; --bg:#f6f6f4; --card:#fff; --txt:#222; --mut:#6b6b6b; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:'Segoe UI',Roboto,Arial,sans-serif; background:var(--bg); color:var(--txt); }
+  header { background:var(--rojo); color:#fff; padding:14px 20px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between; }
+  header h1 { margin:0; font-size:20px; letter-spacing:.5px; }
+  nav { display:flex; gap:4px; }
+  nav button { background:transparent; color:#fff; border:1px solid rgba(255,255,255,.5); border-radius:6px; padding:6px 12px; cursor:pointer; font-size:13px; }
+  nav button.on { background:#fff; color:var(--rojo); font-weight:600; }
+  main { padding:16px 20px; max-width:1400px; margin:auto; }
+  .bar { display:flex; gap:10px; align-items:center; margin-bottom:14px; flex-wrap:wrap; color:var(--mut); font-size:13px; }
+  input, select, textarea { font:inherit; padding:7px 9px; border:1px solid #ccc; border-radius:6px; background:#fff; width:100%; }
+  .bar input { width:auto; }
+  .btn { background:var(--rojo); color:#fff; border:0; border-radius:6px; padding:8px 16px; cursor:pointer; font-weight:600; }
+  .btn:disabled { opacity:.5; }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:12px; }
+  .card { background:var(--card); border-radius:10px; padding:14px 16px; box-shadow:0 1px 3px rgba(0,0,0,.08); border-left:6px solid var(--gris); }
+  .card.verde { border-color:var(--verde); } .card.amarillo { border-color:var(--amarillo); } .card.rojo { border-color:var(--rojo); }
+  .card h3 { margin:0 0 6px; font-size:13px; color:var(--mut); font-weight:600; text-transform:uppercase; letter-spacing:.3px; }
+  .card .v { font-size:30px; font-weight:700; }
+  .card .m { font-size:12px; color:var(--mut); }
+  .card .d { font-size:12.5px; margin-top:8px; line-height:1.4; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; vertical-align:middle; }
+  .dot.verde{background:var(--verde)} .dot.amarillo{background:var(--amarillo)} .dot.rojo{background:var(--rojo)} .dot.gris{background:var(--gris)}
+  .cols { display:grid; grid-template-columns:repeat(auto-fit,minmax(420px,1fr)); gap:12px; margin-top:14px; }
+  .panel { background:#fff; border-radius:10px; padding:14px 16px; box-shadow:0 1px 3px rgba(0,0,0,.08); overflow:auto; }
+  .panel h2 { font-size:14px; margin:0 0 10px; color:var(--rojo); }
+  table { border-collapse:collapse; width:100%; font-size:12.5px; }
+  th { text-align:left; color:var(--mut); font-weight:600; border-bottom:2px solid #eee; padding:6px; }
+  td { border-bottom:1px solid #f0f0f0; padding:6px; }
+  .meter { background:#eee; border-radius:4px; height:8px; min-width:80px; }
+  .meter > i { display:block; height:100%; border-radius:4px; }
+  .empty { color:var(--mut); font-style:italic; }
+  form { background:#fff; border-radius:10px; padding:18px; max-width:760px; box-shadow:0 1px 3px rgba(0,0,0,.08); display:grid; grid-template-columns:1fr 1fr; gap:12px 16px; }
+  form label { font-size:12px; color:var(--mut); display:flex; flex-direction:column; gap:4px; }
+  form .full { grid-column:1/-1; }
+  .msg { padding:10px 12px; border-radius:6px; margin-bottom:12px; font-size:13px; display:none; }
+  .msg.ok { display:block; background:#e5f5e8; color:#1b5e20; } .msg.err { display:block; background:#fde4e4; color:#8b0000; }
+  .hidden { display:none; }
+  @media (max-width:640px) { form { grid-template-columns:1fr; } .cols { grid-template-columns:1fr; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>GESTIÓN DE COMPRAS</h1>
+  <nav>
+    <button data-tab="kpi" class="on">Indicadores</button>
+    <button data-tab="rechazo">Registrar rechazo</button>
+    <button data-tab="recepcion">Registrar recepción</button>
+  </nav>
+</header>
+<div class="stripe" style="height:4px;background:linear-gradient(90deg,#2e9b3e 0 33%,#f2b705 33% 66%,#c8102e 66%)"></div>
+
+<main>
+  <!-- INDICADORES -->
+  <section id="tab-kpi">
+    <div class="bar">
+      Periodo <input type="month" id="periodo">
+      <button class="btn" id="recargar">Actualizar</button>
+      <span id="estado"></span>
+    </div>
+    <div class="grid" id="kpis"></div>
+    <div class="cols">
+      <div class="panel"><h2>OTIF por proveedor</h2><div id="otif"></div></div>
+      <div class="panel"><h2>Precios Pareto vs mes anterior</h2><div id="precios"></div></div>
+      <div class="panel"><h2>Pagos críticos · riesgo de paro de entregas</h2><div id="pagos"></div></div>
+      <div class="panel"><h2>Bodega de rechazos sin cerrar</h2><div id="rechazos"></div></div>
+      <div class="panel"><h2>Proyectos vencidos</h2><div id="proyectos"></div></div>
+    </div>
+  </section>
+
+  <!-- RECHAZO -->
+  <section id="tab-rechazo" class="hidden">
+    <div id="msg-rechazo" class="msg"></div>
+    <form id="f-rechazo">
+      <label>Fecha<input type="date" name="fecha" required></label>
+      <label>Proveedor<select name="proveedor" required></select></label>
+      <label>Material<select name="codigo" required></select></label>
+      <label>Lote<input name="lote"></label>
+      <label>Cantidad rechazada<input type="number" step="any" min="0" name="cantidad" required></label>
+      <label>Costo unitario (vacío = precio base)<input type="number" step="any" min="0" name="costoUnitario"></label>
+      <label>Motivo<select name="motivo" required></select></label>
+      <label>Evidencia (foto / PDF → Drive)<input type="file" name="archivo" accept="image/*,application/pdf"></label>
+      <label class="full">Descripción de la no conformidad<textarea name="descripcion" rows="3"></textarea></label>
+      <div class="full"><button class="btn" type="submit">Guardar rechazo</button></div>
+    </form>
+  </section>
+
+  <!-- RECEPCIÓN -->
+  <section id="tab-recepcion" class="hidden">
+    <div id="msg-recepcion" class="msg"></div>
+    <form id="f-recepcion">
+      <label class="full">Orden de compra<select name="oc" required></select></label>
+      <label>Cantidad recibida<input type="number" step="any" min="0" name="cantidadRecibida" required></label>
+      <label>Fecha real de entrega<input type="date" name="fechaReal" required></label>
+      <div class="full m" id="oc-info" style="font-size:12px;color:#6b6b6b"></div>
+      <div class="full"><button class="btn" type="submit">Registrar recepción</button></div>
+    </form>
+  </section>
+</main>
+
+<script>
+  const $ = s => document.querySelector(s);
+  const money = n => '$' + Math.round(n).toLocaleString('es-CO');
+  const pct = n => (n === null || n === undefined) ? '—' : (n * 100).toFixed(1).replace('.', ',') + '%';
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const hoy = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  const ymd = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  let catalogos = null;
+
+  // Tabs
+  document.querySelectorAll('nav button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('nav button').forEach(x => x.classList.toggle('on', x === b));
+    document.querySelectorAll('main > section').forEach(s => s.classList.toggle('hidden', s.id !== 'tab-' + b.dataset.tab));
+  });
+
+  // Indicadores
+  $('#periodo').value = ymd(hoy).slice(0, 7);
+  $('#recargar').onclick = cargar;
+  $('#periodo').onchange = cargar;
+
+  function cargar() {
+    $('#estado').textContent = 'Calculando…';
+    google.script.run
+      .withSuccessHandler(render)
+      .withFailureHandler(e => $('#estado').textContent = '⚠️ ' + e.message)
+      .getDashboardData($('#periodo').value);
+  }
+
+  function tabla(headers, rows) {
+    if (!rows.length) return '<p class="empty">Sin registros</p>';
+    return '<table><tr>' + headers.map(h => `<th>${h}</th>`).join('') + '</tr>' +
+      rows.map(r => '<tr>' + r.map(c => `<td>${c}</td>`).join('') + '</tr>').join('') + '</table>';
+  }
+
+  function meter(v, color) {
+    return `<div class="meter"><i style="width:${Math.max(0, Math.min(1, v)) * 100}%;background:${color}"></i></div>`;
+  }
+
+  function render(d) {
+    $('#estado').textContent = `Actualizado ${d.generado}`;
+    $('#kpis').innerHTML = d.kpis.map(k => `
+      <div class="card ${k.semaforo}">
+        <h3><span class="dot ${k.semaforo}"></span>${esc(k.nombre)}</h3>
+        <div class="v">${esc(k.valorTxt)}</div>
+        <div class="m">Meta ${esc(k.metaTxt)}</div>
+        <div class="d">${esc(k.detalle)}</div>
+      </div>`).join('');
+
+    $('#otif').innerHTML = tabla(['Proveedor', 'Entregas', 'A tiempo', 'Completas', 'OTIF', ''],
+      d.otifProveedores.map(p => [esc(p.proveedor), p.entregas, p.aTiempo, p.completas, pct(p.pct),
+        meter(p.pct, p.pct >= .95 ? 'var(--verde)' : p.pct >= .85 ? 'var(--amarillo)' : 'var(--rojo)')]));
+
+    $('#precios').innerHTML = tabla(['Código', 'Producto', 'Anterior', 'Actual', 'Variación'],
+      d.variaciones.map(v => [esc(v.codigo), esc(v.producto), money(v.anterior), money(v.actual),
+        `<b style="color:${v.variacion > 0 ? 'var(--rojo)' : 'var(--verde)'}">${pct(v.variacion)}</b>`]));
+
+    $('#pagos').innerHTML = tabla(['Factura', 'Proveedor', 'Valor', 'Vence', 'Estado'],
+      d.pagosCriticos.map(p => [esc(p.factura), esc(p.proveedor), money(p.valor), p.vence,
+        p.estado === 'Vencida' ? `<b style="color:var(--rojo)">Vencida · ${p.mora} d</b>` : 'Por vencer']));
+
+    $('#rechazos').innerHTML = tabla(['ID', 'Proveedor', 'Material', 'Costo', 'Estado', 'Días'],
+      d.rechAbiertos.map(r => [esc(r.id), esc(r.proveedor), esc(r.codigo), money(r.costo), esc(r.estado), r.dias]));
+
+    $('#proyectos').innerHTML = tabla(['ID', 'Proyecto', 'Compromiso', 'Avance'],
+      d.proyVencidos.map(p => [esc(p.id), esc(p.proyecto), p.compromiso, meter(p.avance, 'var(--amarillo)') + pct(p.avance)]));
+  }
+
+  // Catálogos para formularios
+  function cargarCatalogos() {
+    google.script.run.withSuccessHandler(c => {
+      catalogos = c;
+      const opts = (arr, val, txt) => '<option value="">— seleccionar —</option>' + arr.map(x => `<option value="${esc(val(x))}">${esc(txt(x))}</option>`).join('');
+      const fr = $('#f-rechazo');
+      fr.proveedor.innerHTML = opts(c.proveedores, x => x, x => x);
+      fr.codigo.innerHTML = opts(c.productos, x => x.codigo, x => `${x.codigo} · ${x.nombre}`);
+      fr.motivo.innerHTML = opts(c.motivos, x => x, x => x);
+      $('#f-recepcion').oc.innerHTML = opts(c.ordenesAbiertas, x => x.oc, x => `${x.oc} · ${x.proveedor} · ${x.producto} (${x.cantidad})`);
+    }).getCatalogos();
+  }
+
+  $('#f-recepcion').oc.onchange = e => {
+    const o = catalogos && catalogos.ordenesAbiertas.find(x => x.oc === e.target.value);
+    $('#oc-info').textContent = o ? `Pedido: ${o.cantidad} · Fecha pactada: ${o.pactada}` : '';
+    if (o) $('#f-recepcion').cantidadRecibida.value = o.cantidad;
+  };
+
+  function msg(id, ok, text) {
+    const el = $(id);
+    el.className = 'msg ' + (ok ? 'ok' : 'err');
+    el.textContent = text;
+  }
+
+  function leerArchivo(file) {
+    return new Promise((res, rej) => {
+      if (!file) return res(null);
+      if (file.size > 10 * 1024 * 1024) return rej(new Error('El archivo supera 10 MB'));
+      const r = new FileReader();
+      r.onload = () => res({ nombre: file.name, tipo: file.type, data: r.result.split(',')[1] });
+      r.onerror = () => rej(r.error);
+      r.readAsDataURL(file);
+    });
+  }
+
+  $('#f-rechazo').onsubmit = async e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button');
+    btn.disabled = true;
+    try {
+      const data = Object.fromEntries(new FormData(f));
+      data.archivo = await leerArchivo(f.archivo.files[0]);
+      google.script.run
+        .withSuccessHandler(r => { msg('#msg-rechazo', true, `Rechazo ${r.id} registrado${r.evidencia ? ' con evidencia en Drive' : ''}.`); f.reset(); f.fecha.value = ymd(hoy); btn.disabled = false; })
+        .withFailureHandler(err => { msg('#msg-rechazo', false, err.message); btn.disabled = false; })
+        .registrarRechazo(data);
+    } catch (err) { msg('#msg-rechazo', false, err.message); btn.disabled = false; }
+  };
+
+  $('#f-recepcion').onsubmit = e => {
+    e.preventDefault();
+    const f = e.target, btn = f.querySelector('button');
+    btn.disabled = true;
+    google.script.run
+      .withSuccessHandler(r => {
+        msg('#msg-recepcion', true, `Recepción registrada · A tiempo: ${r.aTiempo} · Completa: ${r.completa} · OTIF: ${r.otif}`);
+        f.reset(); f.fechaReal.value = ymd(hoy); $('#oc-info').textContent = ''; btn.disabled = false; cargarCatalogos();
+      })
+      .withFailureHandler(err => { msg('#msg-recepcion', false, err.message); btn.disabled = false; })
+      .registrarRecepcion(Object.fromEntries(new FormData(f)));
+  };
+
+  $('#f-rechazo').fecha.value = ymd(hoy);
+  $('#f-recepcion').fechaReal.value = ymd(hoy);
+  cargar();
+  cargarCatalogos();
+</script>
+</body>
+</html>
