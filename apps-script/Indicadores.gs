@@ -37,7 +37,7 @@ function calcularIndicadores(periodo) {
   const ahorro = sum_(negs, n => evalNegociacion_(n).Ahorro);
   const baseNeg = sum_(negs, n => num_(n['Precio Anterior']) * num_(n['Volumen Anual']));
   const varNeg = ratio_(sum_(negs, n => (num_(n['Precio Negociado']) - num_(n['Precio Anterior'])) * num_(n['Volumen Anual'])), baseNeg);
-  kpis.push(kpi_('ahorro', 'Ahorro tras negociación', ahorro, cfg.META_AHORRO, 'money', true,
+  kpis.push(kpi_('ahorro', 'Ahorro tras negociación', readTable_('NEGOCIACIONES').length ? ahorro : null, cfg.META_AHORRO, 'money', true,
     `${negs.length} negociaciones · variación ponderada ${fmtPct_(varNeg)}`));
 
   /* 4. Costo bodega de rechazos */
@@ -48,7 +48,7 @@ function calcularIndicadores(periodo) {
     .filter(r => r.Estado === 'Abierto' || r.Estado === 'Notificado')
     .map(r => ({ id: r.ID, proveedor: r.Proveedor, codigo: r['Código'], costo: num_(r.Cantidad) * num_(r['Costo Unitario']), estado: r.Estado, dias: toDate_(r.Fecha) ? daysBetween_(toDate_(r.Fecha), hoy) : 0 }))
     .sort((a, b) => b.dias - a.dias);
-  kpis.push(kpi_('rechazos', 'Costo bodega de rechazos', costoRech, cfg.META_COSTO_RECHAZOS, 'money', false,
+  kpis.push(kpi_('rechazos', 'Costo bodega de rechazos', rechazos.length ? costoRech : null, cfg.META_COSTO_RECHAZOS, 'money', false,
     `${rechPeriodo.length} rechazos en el mes · ${rechAbiertos.length} sin cerrar (${fmtMoney_(sum_(rechAbiertos, r => r.costo))})`));
 
   /* 5. Cumplimiento de pagos a proveedores */

@@ -13,6 +13,7 @@ function onOpen() {
     .addItem('⚙️ Inicializar estructura', 'inicializar')
     .addItem('⏰ Activar automatizaciones', 'instalarTriggers')
     .addItem('🧪 Cargar datos demo', 'cargarDatosDemo')
+    .addItem('🧹 Borrar todos los datos (dejar en blanco)', 'borrarDatos')
     .addToUi();
 }
 
@@ -83,6 +84,31 @@ function ensureDriveFolders_() {
 function tryFolder_(id) {
   if (!id) return null;
   try { return DriveApp.getFolderById(id); } catch (e) { return null; }
+}
+
+/**
+ * Deja el sistema en blanco: borra las filas de todas las tablas (conserva encabezados,
+ * listas desplegables, formatos y la hoja Config con metas y parámetros).
+ */
+function borrarDatos() {
+  const ui = SpreadsheetApp.getUi();
+  const r = ui.prompt('Borrar todos los datos',
+    'Se borrarán TODOS los registros (proyectos, OC, ventas, pagos, rechazos, histórico…).\n' +
+    'Se conservan encabezados, Config (metas) y archivos en Drive.\n\nEscribe BORRAR para confirmar:',
+    ui.ButtonSet.OK_CANCEL);
+  if (r.getSelectedButton() !== ui.Button.OK || r.getResponseText().trim().toUpperCase() !== 'BORRAR') {
+    ui.alert('Cancelado. No se borró nada.');
+    return;
+  }
+  Object.keys(SHEETS)
+    .filter(k => k !== 'CONFIG' && k !== 'DASHBOARD')
+    .forEach(k => {
+      const sh = ss_().getSheetByName(SHEETS[k].name);
+      if (sh && sh.getLastRow() > 1) sh.getRange(2, 1, sh.getLastRow() - 1, SHEETS[k].headers.length).clearContent();
+      invalidate_(k);
+    });
+  actualizarDashboard();
+  ui.alert('Listo 🧹 El dashboard quedó en blanco. Empieza a adjuntar información real desde 🛒 Compras › Abrir dashboard.');
 }
 
 /** Revisión diaria 7 a.m.: recalcula, guarda histórico y envía alertas. */
