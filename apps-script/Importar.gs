@@ -47,6 +47,7 @@ function getEsquema() {
 
 /** Vista previa: cómo quedarían mapeadas las columnas del archivo. */
 function previsualizarCarga(key, encabezados) {
+  exigirAdmin_();
   if (!tablasCargables_().includes(key)) throw new Error('Tabla no válida: ' + key);
   const mapa = mapearColumnas_(key, encabezados);
   const mapeadas = mapa.filter(Boolean);
@@ -81,6 +82,7 @@ function convertirValor_(key, header, v) {
  * payload = { tabla, modo: 'agregar'|'reemplazar', encabezados: [], filas: [[]], archivo: {nombre, tipo, data}, modulo }
  */
 function cargarDatos(payload) {
+  exigirAdmin_();
   const key = payload.tabla;
   const prev = previsualizarCarga(key, payload.encabezados);
   if (prev.faltantes.length) throw new Error('Faltan columnas obligatorias: ' + prev.faltantes.join(', '));
@@ -153,6 +155,7 @@ function subcarpeta_(padre, nombre) {
 }
 
 function getCargas() {
+  exigirAdmin_();
   return readTable_('CARGAS').slice(-30).reverse().map(c => ({
     fecha: Utilities.formatDate(toDate_(c.Fecha) || new Date(), APP.TZ, 'dd/MM/yyyy HH:mm'),
     modulo: c['Módulo'], tabla: c.Tabla, archivo: c.Archivo, filas: c.Filas, modo: c.Modo, usuario: c.Usuario, drive: c.Drive,

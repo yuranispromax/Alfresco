@@ -80,6 +80,7 @@ function tryFolder_(id) {
  * listas desplegables, formatos y la hoja Config con metas y parámetros).
  */
 function borrarDatos() {
+  exigirAdmin_();
   const ui = SpreadsheetApp.getUi();
   const r = ui.prompt('Borrar todos los datos',
     'Se borrarán TODOS los registros (proyectos, OC, ventas, pagos, rechazos, histórico…).\n' +
@@ -122,6 +123,7 @@ function avisar_(msg) {
 /* ------------------------------------------------------------------ */
 
 function cargarDatosDemo() {
+  exigirAdmin_();
   const ui = SpreadsheetApp.getUi();
   if (ui.alert('Cargar datos demo', 'Se agregarán registros de ejemplo a todas las hojas. ¿Continuar?', ui.ButtonSet.YES_NO) !== ui.Button.YES) return;
 

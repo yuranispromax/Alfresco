@@ -100,6 +100,7 @@ const SHEETS = {
 /** Parámetros editables desde la hoja Config. */
 const DEFAULT_CONFIG = [
   ['EMAIL_RESPONSABLE', '', 'Correo que recibe la alerta diaria (vacío = propietario del archivo)'],
+  ['ADMINISTRADORES', '', 'Correos adicionales que pueden modificar datos (separados por coma). El dueño de la hoja siempre puede.'],
   ['EMPRESA', 'Alfresco', 'Nombre usado en comunicados'],
   ['OTIF_TOLERANCIA_DIAS', 0, 'Días de tolerancia para considerar una entrega "a tiempo"'],
   ['OTIF_TOLERANCIA_CANTIDAD', 0.02, 'Faltante tolerado para considerar una entrega "completa" (0,02 = 2%)'],

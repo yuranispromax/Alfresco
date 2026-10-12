@@ -1,18 +1,49 @@
 /** Dashboard web (diálogo en la hoja o Web App) y formularios de captura. */
 
+/** Enlace web: consulta para todos; solo la persona administradora puede modificar. */
 function doGet() {
-  return htmlDashboard_()
+  return htmlDashboard_(puedeEditar_() ? 'edicion' : 'lectura')
     .setTitle(APP.NAME)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 function abrirDashboard() {
-  const html = htmlDashboard_().setWidth(1280).setHeight(820);
+  const html = htmlDashboard_(puedeEditar_() ? 'edicion' : 'lectura').setWidth(1280).setHeight(820);
   SpreadsheetApp.getUi().showModalDialog(html, APP.NAME);
 }
 
-function htmlDashboard_() {
-  return HtmlService.createTemplateFromFile('Dashboard').evaluate();
+function htmlDashboard_(modo) {
+  const t = HtmlService.createTemplateFromFile('Dashboard');
+  t.modo = modo === 'edicion' ? 'edicion' : 'lectura';
+  return t.evaluate();
+}
+
+/* ---------- Permisos ---------- */
+
+/** Correo del dueño de la hoja (o de quien ejecuta, si la hoja está en una unidad compartida). */
+function correoAdmin_() {
+  try {
+    const o = ss_().getOwner();
+    if (o && o.getEmail()) return o.getEmail().toLowerCase();
+  } catch (e) { /* sin dueño visible */ }
+  return String(Session.getEffectiveUser().getEmail() || '').toLowerCase();
+}
+
+/**
+ * ¿Quien usa el tablero puede modificar datos? Solo el dueño de la hoja y los correos de
+ * Config › ADMINISTRADORES. En el enlace web, quien no es dueño llega sin correo o con otro
+ * correo, así que queda en modo consulta.
+ */
+function puedeEditar_() {
+  let yo = '';
+  try { yo = String(Session.getActiveUser().getEmail() || '').toLowerCase(); } catch (e) { /* anónimo */ }
+  if (!yo) return false;
+  const extra = String(getConfig_().ADMINISTRADORES || '').toLowerCase().split(/[\s,;]+/).filter(Boolean);
+  return yo === correoAdmin_() || extra.includes(yo);
+}
+
+function exigirAdmin_() {
+  if (!puedeEditar_()) throw new Error('Este tablero es de consulta. Solo la persona administradora puede modificar la información.');
 }
 
 /** Tipografía Nourd: archivo HTML opcional "Fuentes" con los @font-face (no se versiona: fuente con licencia). */
@@ -22,6 +53,7 @@ function incluirFuentes_() {
 
 /** Todo lo que pinta el dashboard en una sola llamada. */
 function getDashboardData(periodo) {
+  const edita = puedeEditar_();
   const data = calcularIndicadores(periodo);
   const conteos = {};
   tablasCargables_().forEach(k => { conteos[k] = readTable_(k).length; });
@@ -29,8 +61,9 @@ function getDashboardData(periodo) {
     tendencia: tendencia_(data.periodo, 6),
     conteos,
     esquema: getEsquema(),
-    cargas: getCargas().slice(0, 10),
+    cargas: edita ? getCargas().slice(0, 10) : [],
     analisis: analisisPeriodo_(data.periodo),
+    modo: edita ? 'edicion' : 'lectura',
   });
 }
 
@@ -61,6 +94,7 @@ function getHistorialAnalisis(indicador) {
 
 /** Crea o actualiza el análisis de (periodo, indicador). */
 function guardarAnalisis(d) {
+  exigirAdmin_();
   const periodo = normPeriodo_(d.periodo);
   const mod = MODULOS.find(m => m.id === d.indicador);
   if (!mod || !/^\d{4}-\d{2}$/.test(periodo)) throw new Error('Indicador o periodo no válido.');
@@ -90,6 +124,7 @@ function guardarAnalisis(d) {
 }
 
 function getCatalogos() {
+  exigirAdmin_();
   return {
     proveedores: readTable_('PROVEEDORES').filter(p => p.Estado !== 'Inactivo').map(p => p.Proveedor),
     productos: readTable_('PRODUCTOS').filter(p => p.Estado !== 'Inactivo')
@@ -102,6 +137,7 @@ function getCatalogos() {
 
 /** Rechazo desde el formulario: guarda la evidencia en Drive y registra la fila. */
 function registrarRechazo(f) {
+  exigirAdmin_();
   if (!f.proveedor || !f.codigo || !(num_(f.cantidad) > 0)) throw new Error('Proveedor, código y cantidad son obligatorios.');
   const lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -137,6 +173,7 @@ function registrarRechazo(f) {
 
 /** Recepción en bodega contra OC: alimenta OTIF y actualiza el estado de la OC. */
 function registrarRecepcion(f) {
+  exigirAdmin_();
   const recibida = num_(f.cantidadRecibida);
   if (!f.oc) throw new Error('Selecciona la orden de compra.');
   if (!(recibida > 0)) throw new Error('La cantidad recibida debe ser mayor que cero.');

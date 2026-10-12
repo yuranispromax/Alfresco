@@ -57,6 +57,7 @@ function registrarComunicacion_(tipo, proveedor, email, asunto, referencia) {
  * con la evidencia de Drive, y lo pasa a "Notificado".
  */
 function notificarRechazos() {
+  exigirAdmin_();
   const cfg = getConfig_();
   const provs = emailsProveedores_();
   const pendientes = readTable_('RECHAZOS').filter(r => r.Estado === 'Abierto' && !r['Fecha Notificación']);
@@ -105,6 +106,7 @@ function notificarRechazosMenu() {
  * estado de cartera y afectación al Nivel de Servicio (NS).
  */
 function enviarComunicadoNS() {
+  exigirAdmin_();
   const cfg = getConfig_();
   const hoy = startOfDay_(new Date());
   const cartera = {};
