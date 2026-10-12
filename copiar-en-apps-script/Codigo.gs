@@ -826,7 +826,7 @@ function revisionDiaria() {
   ].filter(Boolean);
 
   if (!secciones.length) return;
-  const html = `<div style="font-family:Arial,sans-serif;color:#222">
+  const html = `<div style="font-family:Nourd,Outfit,Arial,sans-serif;color:#222">
     <h2 style="color:#c8102e;margin:0">Gestión de Compras · alerta diaria</h2>
     <p style="color:#666">Periodo ${data.periodo} · ${data.generado} · <a href="${ss_().getUrl()}">Abrir hoja</a></p>
     ${secciones.join('')}</div>`;
@@ -864,7 +864,7 @@ function notificarRechazos() {
     const prov = provs[r.Proveedor];
     if (!prov || !prov.Email) { omitidos.push(`${r.ID} (${r.Proveedor} sin email)`); return; }
     const asunto = `${cfg.EMPRESA} · No conformidad ${r.ID} · ${r['Código']} lote ${r.Lote}`;
-    const html = `<div style="font-family:Arial,sans-serif">
+    const html = `<div style="font-family:Nourd,Outfit,Arial,sans-serif">
       <p>Estimado(a) ${escapeHtml_(prov.Contacto || r.Proveedor)}:</p>
       <p>En la inspección de recibo se generó el siguiente rechazo, que se encuentra en nuestra bodega de rechazos:</p>
       <table style="border-collapse:collapse;font-size:13px">
@@ -918,7 +918,7 @@ function enviarComunicadoNS() {
   destinatarios.forEach(p => {
     const c = cartera[p.Proveedor];
     const asunto = `${cfg.EMPRESA} · Continuidad de abastecimiento y nivel de servicio`;
-    const html = `<div style="font-family:Arial,sans-serif">
+    const html = `<div style="font-family:Nourd,Outfit,Arial,sans-serif">
       <p>Estimado(a) ${escapeHtml_(p.Contacto || p.Proveedor)}:</p>
       <p>Hemos sido informados de la suspensión de entregas a ${escapeHtml_(cfg.EMPRESA)}.
       Nuestro compromiso es mantener al día los pagos a nuestros aliados:
