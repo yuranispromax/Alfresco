@@ -1136,7 +1136,15 @@ function instalarTriggers() {
     .filter(t => t.getHandlerFunction() === 'revisionDiaria')
     .forEach(t => ScriptApp.deleteTrigger(t));
   ScriptApp.newTrigger('revisionDiaria').timeBased().everyDays(1).atHour(7).inTimezone(APP.TZ).create();
-  SpreadsheetApp.getUi().alert('Automatización activa ⏰\nCada día a las 7:00 a.m. se recalculan los indicadores y se envía la alerta de compras.');
+  const activos = ScriptApp.getProjectTriggers().filter(t => t.getHandlerFunction() === 'revisionDiaria').length;
+  avisar_(activos
+    ? 'Automatización activa ⏰\nCada día a las 7:00 a.m. se recalculan los indicadores y se envía la alerta de compras.\nVerifícalo en Apps Script › Activadores (revisionDiaria).'
+    : 'No se pudo crear el activador. Créalo a mano en Apps Script › Activadores › Añadir activador › revisionDiaria.');
+}
+
+/** Alerta en la hoja si hay interfaz; si se ejecuta desde el editor, queda en el registro. */
+function avisar_(msg) {
+  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { Logger.log(msg); }
 }
 
 /* ------------------------------------------------------------------ */
