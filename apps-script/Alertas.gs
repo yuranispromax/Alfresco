@@ -8,9 +8,11 @@ function revisionDiaria() {
   const diasRech = num_(cfg.RECHAZO_DIAS_ALERTA);
   const rechViejos = data.rechAbiertos.filter(r => r.dias > diasRech);
   const rojos = data.kpis.filter(k => k.semaforo === 'rojo');
+  const notas = analisisPeriodo_(data.periodo);
 
   const secciones = [
-    tablaHtml_('🚦 Indicadores en rojo', ['Indicador', 'Resultado', 'Meta'], rojos.map(k => [k.nombre, k.valorTxt, k.metaTxt])),
+    tablaHtml_('🚦 Indicadores en rojo', ['Indicador', 'Resultado', 'Meta', 'Análisis / plan'],
+      rojos.map(k => [k.nombre, k.valorTxt, k.metaTxt, notas[k.id] ? (notas[k.id].plan || notas[k.id].analisis) : 'Sin análisis registrado'])),
     tablaHtml_('💸 Pagos vencidos / por vencer (riesgo de paro de entregas)', ['Factura', 'Proveedor', 'Valor', 'Vence', 'Estado'],
       data.pagosCriticos.map(p => [p.factura, p.proveedor, fmtMoney_(p.valor), p.vence, `${p.estado}${p.mora ? ' (' + p.mora + ' d)' : ''}`])),
     tablaHtml_(`📦 Rechazos abiertos > ${diasRech} días`, ['ID', 'Proveedor', 'Costo', 'Estado', 'Días'],
@@ -21,12 +23,16 @@ function revisionDiaria() {
       data.proyVencidos.map(p => [p.id, p.proyecto, p.compromiso, fmtPct_(p.avance)])),
   ].filter(Boolean);
 
-  if (!secciones.length) return;
+  if (!secciones.length) {
+    avisar_('Hoy no hay alertas: ningún indicador en rojo, pago crítico, rechazo vencido, alza de precio ni proyecto vencido.');
+    return;
+  }
   const html = `<div style="font-family:Nourd,Outfit,Arial,sans-serif;color:#222">
     <h2 style="color:#c8102e;margin:0">Gestión de Compras · alerta diaria</h2>
     <p style="color:#666">Periodo ${data.periodo} · ${data.generado} · <a href="${ss_().getUrl()}">Abrir hoja</a></p>
     ${secciones.join('')}</div>`;
   MailApp.sendEmail({ to: destino, subject: `[Compras] ${rojos.length} indicadores en rojo · ${data.pagosCriticos.length} pagos críticos`, htmlBody: html, name: APP.NAME });
+  avisar_('Alerta enviada a ' + destino);
 }
 
 function tablaHtml_(titulo, headers, rows) {
@@ -69,7 +75,7 @@ function notificarRechazos() {
            ['Motivo', r.Motivo], ['Descripción', r['Descripción NC']]]
           .map(([k, v]) => `<tr><td style="padding:4px 10px;background:#f5f5f5"><b>${k}</b></td><td style="padding:4px 10px">${escapeHtml_(v)}</td></tr>`).join('')}
       </table>
-      ${r.Evidencia ? `<p>Evidencia: <a href="${r.Evidencia}">ver en Drive</a></p>` : ''}
+      ${r.Evidencia ? `<p>Evidencia: <a href="${escapeHtml_(r.Evidencia)}">ver en Drive</a></p>` : ''}
       <p>Solicitamos: (1) análisis de causa raíz y plan de acción en máximo 5 días hábiles y
       (2) coordinar el retiro o reposición del material.</p>
       <p>Cordialmente,<br>Dirección de Compras · ${escapeHtml_(cfg.EMPRESA)}</p></div>`;

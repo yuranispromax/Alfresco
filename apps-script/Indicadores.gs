@@ -20,7 +20,7 @@ function calcularIndicadores(periodo) {
   LISTAS.ESTADO_PROYECTO.forEach(e => { proyectosEstado[e] = 0; });
   readTable_('PROYECTOS').forEach(p => { if (p.Estado in proyectosEstado) proyectosEstado[p.Estado]++; });
   kpis.push(kpi_('proyectos', 'Proyectos concluidos / Total', ratio_(concluidos, proyectos.length),
-    cfg.META_PROYECTOS, 'pct', true, `${concluidos} de ${proyectos.length} · ${proyVencidos.length} vencidos`));
+    cfg.META_PROYECTOS, 'pct', true, `${concluidos} de ${plural_(proyectos.length, 'proyecto')} · ${plural_(proyVencidos.length, 'vencido')}`));
 
   /* 2. Participación Compras / Ventas + ejecución de presupuesto */
   const ocs = readTable_('ORDENES').filter(o => o.Estado !== 'Cancelada' && enPeriodo(o.Fecha));
@@ -38,7 +38,7 @@ function calcularIndicadores(periodo) {
   const baseNeg = sum_(negs, n => num_(n['Precio Anterior']) * num_(n['Volumen Anual']));
   const varNeg = ratio_(sum_(negs, n => (num_(n['Precio Negociado']) - num_(n['Precio Anterior'])) * num_(n['Volumen Anual'])), baseNeg);
   kpis.push(kpi_('ahorro', 'Ahorro tras negociación', readTable_('NEGOCIACIONES').length ? ahorro : null, cfg.META_AHORRO, 'money', true,
-    `${negs.length} negociaciones · variación ponderada ${fmtPct_(varNeg)}`));
+    `${plural_(negs.length, 'negociación', 'negociaciones')} en el mes · variación ponderada ${fmtPct_(varNeg)}`));
 
   /* 4. Costo bodega de rechazos */
   const rechazos = readTable_('RECHAZOS');
@@ -49,7 +49,7 @@ function calcularIndicadores(periodo) {
     .map(r => ({ id: r.ID, proveedor: r.Proveedor, codigo: r['Código'], costo: num_(r.Cantidad) * num_(r['Costo Unitario']), estado: r.Estado, dias: toDate_(r.Fecha) ? daysBetween_(toDate_(r.Fecha), hoy) : 0 }))
     .sort((a, b) => b.dias - a.dias);
   kpis.push(kpi_('rechazos', 'Costo bodega de rechazos', rechazos.length ? costoRech : null, cfg.META_COSTO_RECHAZOS, 'money', false,
-    `${rechPeriodo.length} rechazos en el mes · ${rechAbiertos.length} sin cerrar (${fmtMoney_(sum_(rechAbiertos, r => r.costo))})`));
+    `${plural_(rechPeriodo.length, 'rechazo')} en el mes · ${rechAbiertos.length} sin cerrar (${fmtMoney_(sum_(rechAbiertos, r => r.costo))})`));
 
   /* 5. Cumplimiento de pagos a proveedores */
   const pagos = readTable_('PAGOS');
@@ -62,7 +62,7 @@ function calcularIndicadores(periodo) {
     .map(p => ({ ...p, vence: fmtDate_(p.vence) }));
   const carteraVencida = sum_(pagosCriticos.filter(p => p.estado === 'Vencida'), p => p.valor);
   kpis.push(kpi_('pagos', 'Cumplimiento de pagos a proveedores', ratio_(aTiempo, exigibles.length), cfg.META_PAGOS, 'pct', true,
-    `${aTiempo} de ${exigibles.length} facturas a tiempo · cartera vencida ${fmtMoney_(carteraVencida)}`));
+    `${aTiempo} de ${plural_(exigibles.length, 'factura')} pagadas a tiempo · cartera vencida ${fmtMoney_(carteraVencida)}`));
 
   /* 6. OTIF por proveedor */
   const entregas = readTable_('ENTREGAS').filter(e => enPeriodo(e['Fecha Pactada']) && toDate_(e['Fecha Real']));
@@ -80,7 +80,7 @@ function calcularIndicadores(periodo) {
     .sort((a, b) => a.pct - b.pct);
   const otifTotal = sum_(otifProveedores, p => p.otif);
   kpis.push(kpi_('otif', 'OTIF proveedores', ratio_(otifTotal, entregas.length), cfg.META_OTIF, 'pct', true,
-    `${otifTotal} de ${entregas.length} entregas completas y a tiempo`));
+    `${otifTotal} de ${plural_(entregas.length, 'entrega')} completas y a tiempo`));
 
   /* 7. Variación de precios listado Pareto (precio medio ponderado de OC vs mes anterior) */
   const pareto = {};
@@ -109,7 +109,7 @@ function calcularIndicadores(periodo) {
   const umbral = num_(cfg.UMBRAL_VARIACION_PRECIO);
   const alertasPrecios = variaciones.filter(v => v.variacion > umbral);
   kpis.push(kpi_('precios_pareto', 'Variación de precios Pareto', varPareto, cfg.META_VAR_PRECIOS, 'pct', false,
-    `${variaciones.length} productos comparados vs ${prev} · ${alertasPrecios.length} sobre umbral ${fmtPct_(umbral)}`));
+    `${plural_(variaciones.length, 'producto')} comparados vs ${prev} · ${alertasPrecios.length} sobre umbral ${fmtPct_(umbral)}`));
 
   return {
     periodo,
@@ -166,11 +166,17 @@ function pintarDashboard_(data) {
   sh.getRange('A1').setValue('GESTIÓN DE COMPRAS · DIRECCIÓN').setFontSize(16).setFontWeight('bold').setFontColor('#c8102e');
   sh.getRange('A2').setValue(`Periodo ${data.periodo} · actualizado ${data.generado}`).setFontColor('#666666');
 
-  const rows = [['Indicador', 'Resultado', 'Meta', 'Semáforo', 'Detalle']]
-    .concat(data.kpis.map(k => [k.nombre, k.valorTxt, k.metaTxt, k.semaforo.toUpperCase(), k.detalle]));
-  sh.getRange(4, 1, rows.length, 5).setValues(rows);
-  sh.getRange(4, 1, 1, 5).setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e');
-  data.kpis.forEach((k, i) => sh.getRange(5 + i, 1, 1, 5).setBackground(COLORES_SEMAFORO[k.semaforo]));
+  const notas = analisisPeriodo_(data.periodo);
+  const rows = [['Indicador', 'Resultado', 'Meta', 'Semáforo', 'Detalle', 'Análisis / plan de acción']]
+    .concat(data.kpis.map(k => {
+      const a = notas[k.id];
+      return [k.nombre, k.valorTxt, k.metaTxt, k.semaforo.toUpperCase(), k.detalle,
+        a ? celda_([a.analisis, a.plan && 'Plan: ' + a.plan].filter(Boolean).join(' · ')) : ''];
+    }));
+  sh.getRange(4, 1, rows.length, 6).setValues(rows);
+  sh.getRange(4, 1, 1, 6).setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e');
+  sh.getRange(5, 6, rows.length - 1, 1).setWrap(true);
+  data.kpis.forEach((k, i) => sh.getRange(5 + i, 1, 1, 6).setBackground(COLORES_SEMAFORO[k.semaforo]));
 
   let r = 6 + rows.length;
   r = bloque_(sh, r, 'OTIF por proveedor', ['Proveedor', 'Entregas', 'A tiempo', 'Completas', 'OTIF %'],
@@ -184,7 +190,7 @@ function pintarDashboard_(data) {
   bloque_(sh, r, 'Proyectos vencidos', ['ID', 'Proyecto', 'Compromiso', 'Avance', ''],
     data.proyVencidos.map(p => [p.id, p.proyecto, p.compromiso, fmtPct_(p.avance), '']));
 
-  sh.setColumnWidth(1, 300).setColumnWidth(2, 200).setColumnWidth(3, 140).setColumnWidth(4, 140).setColumnWidth(5, 520);
+  sh.setColumnWidth(1, 300).setColumnWidth(2, 200).setColumnWidth(3, 140).setColumnWidth(4, 140).setColumnWidth(5, 460).setColumnWidth(6, 420);
 }
 
 function bloque_(sh, r, titulo, headers, rows) {

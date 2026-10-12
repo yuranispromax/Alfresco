@@ -9,22 +9,29 @@ function tablasCargables_() {
 }
 
 function normHeader_(s) {
-  return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-/** Encabezado del archivo → columna del sistema (o null si no se reconoce). */
+/**
+ * Encabezado del archivo → columna del sistema (o null si no se reconoce).
+ * Primero los nombres exactos y luego los sinónimos, para que un sinónimo no
+ * le quite la columna a un encabezado que coincide exactamente.
+ */
 function mapearColumnas_(key, encabezados) {
   const destino = SHEETS[key].headers;
+  const norm = encabezados.map(normHeader_);
+  const mapa = encabezados.map(() => null);
   const usados = new Set();
-  return encabezados.map(h => {
-    const n = normHeader_(h);
-    if (!n) return null;
-    let col = destino.find(d => normHeader_(d) === n);
-    if (!col) col = destino.find(d => (ALIAS[d] || []).includes(n));
-    if (!col || usados.has(col)) return null;
-    usados.add(col);
-    return col;
+  norm.forEach((n, i) => {
+    const col = n && destino.find(d => normHeader_(d) === n);
+    if (col && !usados.has(col)) { mapa[i] = col; usados.add(col); }
   });
+  norm.forEach((n, i) => {
+    if (mapa[i] || !n) return;
+    const col = destino.find(d => !usados.has(d) && (ALIAS[d] || []).includes(n));
+    if (col) { mapa[i] = col; usados.add(col); }
+  });
+  return mapa;
 }
 
 function getEsquema() {
@@ -50,26 +57,23 @@ function previsualizarCarga(key, encabezados) {
   };
 }
 
-function convertirValor_(header, v) {
+const COLUMNAS_TEXTO = ['OC', 'Código', 'Factura', 'NIT', 'Lote', 'ID', 'Proveedor', 'Proveedor Principal', 'Proveedor Alterno'];
+
+function convertirValor_(key, header, v) {
   if (v === null || v === undefined) return '';
   if (typeof v === 'string') v = v.trim();
   if (v === '') return '';
   if (header === 'Periodo') return normPeriodo_(v);
   if (/^Fecha|Licitación$/.test(header)) return parseFecha_(v);
-  if (/Cantidad|Precio|Costo|Valor$|^Total|Presupuesto|^Ventas|Volumen|Stock|Rotación|Ahorro/.test(header)) return num_(v);
+  if (COLUMNAS_TEXTO.includes(header)) return String(v).trim();
   if (header === 'Avance %') { const n = num_(v); return n > 1 ? n / 100 : n; }
+  if (/Cantidad|Precio|Costo|Valor$|^Total|Presupuesto|^Ventas|Volumen|Stock|Rotación|Ahorro/.test(header)) return num_(v);
   if (header === 'Pareto' || header === 'Paro Entregas') return /^(s|si|sí|x|1|true|yes)$/i.test(String(v)) ? 'Sí' : 'No';
-  return v;
-}
-
-/** Acepta 'yyyy-mm-dd' (lo que envía el navegador), 'dd/mm/yyyy' y seriales de Excel. */
-function parseFecha_(v) {
-  if (v instanceof Date) return v;
-  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400000) + new Date().getTimezoneOffset() * 60000);
-  let m = String(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-  m = String(v).match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/);
-  if (m) return new Date(m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[2] - 1, +m[1]);
+  const lista = SHEETS[key].lists && SHEETS[key].lists[header];
+  if (lista) {
+    const n = normHeader_(v);
+    return lista.find(x => normHeader_(x) === n) || v; // "CONCLUIDO" → "Concluido"
+  }
   return v;
 }
 
@@ -84,11 +88,18 @@ function cargarDatos(payload) {
   const objs = payload.filas
     .map(fila => {
       const o = {};
-      prev.mapa.forEach((col, i) => { if (col) o[col] = convertirValor_(col, fila[i]); });
+      prev.mapa.forEach((col, i) => { if (col) o[col] = convertirValor_(key, col, fila[i]); });
       return o;
     })
     .filter(o => REQUERIDOS[key].some(r => o[r] !== '' && o[r] !== undefined));
   if (!objs.length) throw new Error('El archivo no tiene filas con datos.');
+
+  // Avisos: filas sin datos obligatorios o con fechas que no se pudieron leer
+  const avisos = [];
+  const incompletas = objs.filter(o => REQUERIDOS[key].some(r => o[r] === '' || o[r] === undefined)).length;
+  if (incompletas) avisos.push(`${incompletas} fila(s) con columnas obligatorias vacías`);
+  const fechasMal = objs.filter(o => Object.keys(o).some(h => /^Fecha/.test(h) && o[h] !== '' && !(o[h] instanceof Date))).length;
+  if (fechasMal) avisos.push(`${fechasMal} fila(s) con fechas que no se reconocieron (usa dd/mm/aaaa)`);
 
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -98,6 +109,7 @@ function cargarDatos(payload) {
       sh.getRange(2, 1, sh.getLastRow() - 1, SHEETS[key].headers.length).clearContent();
       invalidate_(key);
     }
+    asignarIds_(key, objs);
     appendRows_(key, objs);
 
     const url = archivarAdjunto_(key, payload.archivo);
@@ -111,7 +123,17 @@ function cargarDatos(payload) {
   }
 
   actualizarDashboard(payload.periodo);
-  return { filas: objs.length, ignoradas: prev.ignoradas, tabla: SHEETS[key].name };
+  return { filas: objs.length, ignoradas: prev.ignoradas, tabla: SHEETS[key].name, avisos };
+}
+
+/** Rechazos y proyectos sin ID reciben uno consecutivo (RCH-0001, PRY-1…). */
+function asignarIds_(key, objs) {
+  const pref = { RECHAZOS: ['RCH-', 4], PROYECTOS: ['PRY-', 0] }[key];
+  if (!pref) return;
+  let n = readTable_(key).concat(objs).reduce((m, r) => Math.max(m, Number(String(r.ID || '').replace(/\D/g, '')) || 0), 0);
+  objs.forEach(o => {
+    if (!o.ID) o.ID = pref[0] + (pref[1] ? String(++n).padStart(pref[1], '0') : String(++n));
+  });
 }
 
 /** Guarda el archivo original en Drive › Gestión de Compras › Adjuntos › <tabla>. */

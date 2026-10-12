@@ -4,10 +4,21 @@ function ss_() {
   return SpreadsheetApp.getActive();
 }
 
+/** Hoja de una tabla; si no existe (p. ej. tras una actualización del sistema) se crea con su formato. */
 function sheet_(key) {
+  return ss_().getSheetByName(SHEETS[key].name) || crearHoja_(key);
+}
+
+function crearHoja_(key) {
   const def = SHEETS[key];
-  const sh = ss_().getSheetByName(def.name);
-  if (!sh) throw new Error(`Falta la hoja "${def.name}". Ejecuta 🛒 Compras › Inicializar estructura.`);
+  const sh = ss_().getSheetByName(def.name) || ss_().insertSheet(def.name);
+  if (def.headers.length) {
+    sh.getRange(1, 1, 1, def.headers.length).setValues([def.headers])
+      .setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e')
+      .setWrap(true).setVerticalAlignment('middle');
+    sh.setFrozenRows(1);
+    formatColumns_(sh, def);
+  }
   return sh;
 }
 
@@ -36,9 +47,19 @@ function appendRows_(key, objs) {
   if (!objs.length) return;
   const headers = SHEETS[key].headers;
   const sh = sheet_(key);
-  const rows = objs.map(o => headers.map(h => (o[h] === undefined || o[h] === null) ? '' : o[h]));
-  sh.getRange(sh.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  const rows = objs.map(o => headers.map(h => celda_(o[h])));
+  const start = sh.getLastRow() + 1;
+  const falta = start + rows.length - 1 - sh.getMaxRows();
+  if (falta > 0) sh.insertRowsAfter(sh.getMaxRows(), falta + 100); // la hoja crece sola
+  sh.getRange(start, 1, rows.length, headers.length).setValues(rows);
   invalidate_(key);
+}
+
+/** Valor seguro para escribir: vacío si no hay dato; texto que empieza por "=" no se ejecuta como fórmula. */
+function celda_(v) {
+  if (v === undefined || v === null) return '';
+  if (typeof v === 'string' && /^[=+@]/.test(v)) return "'" + v;
+  return v;
 }
 
 function setCell_(key, row, header, value) {
@@ -69,19 +90,50 @@ function setConfig_(key, value) {
 
 /* ---------- tipos ---------- */
 
+/**
+ * Número desde texto en formato colombiano o internacional:
+ * "1.500.000" · "1.500.000,50" · "1,500,000.50" · "$ 2.000" · "7850" → número.
+ */
 function num_(v) {
-  if (typeof v === 'number') return v;
-  let s = String(v).replace(/[$\s%]/g, '');
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); // formato 1.234,5
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  if (v === null || v === undefined || v === '') return 0;
+  let s = String(v).replace(/[$\s%\u00a0]/g, '');
+  const coma = s.lastIndexOf(','), punto = s.lastIndexOf('.');
+  if (coma > -1 && punto > -1) {
+    s = coma > punto ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (coma > -1) {
+    s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  } else if (punto > -1 && /^-?\d{1,3}(\.\d{3})+$/.test(s)) {
+    s = s.replace(/\./g, '');
+  }
   const n = Number(s);
   return isFinite(n) ? n : 0;
 }
 
+/** Fecha desde Date, 'aaaa-mm-dd', 'dd/mm/aaaa' o serial de Excel (siempre en hora local). */
 function toDate_(v) {
   if (!v) return null;
   if (v instanceof Date) return isNaN(v) ? null : v;
-  const d = new Date(v);
-  return isNaN(d) ? null : d;
+  const d = parseFecha_(v);
+  return d instanceof Date && !isNaN(d) ? d : null;
+}
+
+function parseFecha_(v) {
+  if (v instanceof Date) return v;
+  if (typeof v === 'number') {
+    const utc = new Date(Math.round((v - 25569) * 86400000));
+    return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
+  }
+  const t = String(v).trim();
+  const crear = (y, mo, d) => {
+    const f = new Date(y, mo - 1, d);
+    return f.getFullYear() === y && f.getMonth() === mo - 1 && f.getDate() === d ? f : v; // rechaza 31/02, 99/99…
+  };
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return crear(+m[1], +m[2], +m[3]);
+  m = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})(?:\s.*)?$/);
+  if (m) return crear(m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[2], +m[1]);
+  return v;
 }
 
 function startOfDay_(d) {
@@ -130,6 +182,11 @@ function fmtPct_(n) {
   return n === null || n === undefined ? '—' : (n * 100).toFixed(1).replace('.', ',') + '%';
 }
 
+/** "1 rechazo", "3 rechazos" · plural irregular opcional. */
+function plural_(n, uno, varios) {
+  return `${n} ${n === 1 ? uno : (varios || uno + 's')}`;
+}
+
 function sum_(arr, fn) {
   return arr.reduce((a, x) => a + fn(x), 0);
 }
@@ -139,7 +196,7 @@ function ratio_(a, b) {
 }
 
 function escapeHtml_(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function currentUser_() {

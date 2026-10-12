@@ -83,6 +83,10 @@ const SHEETS = {
     name: 'Cargas',
     headers: ['Fecha', 'Módulo', 'Tabla', 'Archivo', 'Filas', 'Modo', 'Usuario', 'Drive'],
   },
+  ANALISIS: {
+    name: 'Analisis',
+    headers: ['Periodo', 'Indicador', 'Nombre', 'Análisis', 'Plan de Acción', 'Responsable', 'Fecha Compromiso', 'Autor', 'Actualizado'],
+  },
   HISTORICO: {
     name: 'KPI Historico',
     headers: ['Periodo', 'Indicador', 'Valor', 'Meta', 'Semáforo', 'Actualizado'],

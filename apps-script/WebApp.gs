@@ -30,17 +30,73 @@ function getDashboardData(periodo) {
     conteos,
     esquema: getEsquema(),
     cargas: getCargas().slice(0, 10),
+    analisis: analisisPeriodo_(data.periodo),
   });
+}
+
+/* ---------- Análisis / observaciones por indicador y periodo ---------- */
+
+function analisisFila_(r) {
+  return {
+    periodo: normPeriodo_(r.Periodo), indicador: r.Indicador, analisis: String(r['Análisis'] || ''),
+    plan: String(r['Plan de Acción'] || ''), responsable: String(r.Responsable || ''),
+    compromiso: toDate_(r['Fecha Compromiso']) ? Utilities.formatDate(toDate_(r['Fecha Compromiso']), APP.TZ, 'yyyy-MM-dd') : '',
+    autor: String(r.Autor || ''),
+    actualizado: toDate_(r.Actualizado) ? Utilities.formatDate(toDate_(r.Actualizado), APP.TZ, 'dd/MM/yyyy HH:mm') : '',
+  };
+}
+
+/** { idIndicador: análisis } del periodo. */
+function analisisPeriodo_(periodo) {
+  const out = {};
+  readTable_('ANALISIS').filter(r => normPeriodo_(r.Periodo) === periodo).forEach(r => { out[r.Indicador] = analisisFila_(r); });
+  return out;
+}
+
+/** Historial de análisis de un indicador (más reciente primero). */
+function getHistorialAnalisis(indicador) {
+  return readTable_('ANALISIS').filter(r => r.Indicador === indicador).map(analisisFila_)
+    .sort((a, b) => (a.periodo < b.periodo ? 1 : -1)).slice(0, 12);
+}
+
+/** Crea o actualiza el análisis de (periodo, indicador). */
+function guardarAnalisis(d) {
+  const periodo = normPeriodo_(d.periodo);
+  const mod = MODULOS.find(m => m.id === d.indicador);
+  if (!mod || !/^\d{4}-\d{2}$/.test(periodo)) throw new Error('Indicador o periodo no válido.');
+  if (!String(d.analisis || '').trim() && !String(d.plan || '').trim()) throw new Error('Escribe el análisis o el plan de acción.');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const fila = {
+      Periodo: periodo, Indicador: d.indicador, Nombre: mod.titulo,
+      'Análisis': String(d.analisis || '').trim(), 'Plan de Acción': String(d.plan || '').trim(),
+      Responsable: String(d.responsable || '').trim(),
+      'Fecha Compromiso': d.compromiso ? parseFecha_(d.compromiso) : '',
+      Autor: currentUser_(), Actualizado: new Date(),
+    };
+    const ex = readTable_('ANALISIS').find(r => normPeriodo_(r.Periodo) === periodo && r.Indicador === d.indicador);
+    if (ex) {
+      sheet_('ANALISIS').getRange(ex._row, 1, 1, SHEETS.ANALISIS.headers.length)
+        .setValues([SHEETS.ANALISIS.headers.map(h => celda_(fila[h]))]);
+      invalidate_('ANALISIS');
+    } else {
+      appendRows_('ANALISIS', [fila]);
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return analisisPeriodo_(periodo)[d.indicador];
 }
 
 function getCatalogos() {
   return {
     proveedores: readTable_('PROVEEDORES').filter(p => p.Estado !== 'Inactivo').map(p => p.Proveedor),
     productos: readTable_('PRODUCTOS').filter(p => p.Estado !== 'Inactivo')
-      .map(p => ({ codigo: p['Código'], nombre: p.Producto, precio: num_(p['Precio Base']) })),
+      .map(p => ({ codigo: String(p['Código']), nombre: p.Producto, precio: num_(p['Precio Base']) })),
     motivos: LISTAS.MOTIVO_RECHAZO,
     ordenesAbiertas: readTable_('ORDENES').filter(o => o.Estado === 'Abierta' || o.Estado === 'Recibida parcial')
-      .map(o => ({ oc: o.OC, proveedor: o.Proveedor, codigo: o['Código'], producto: o.Producto, cantidad: num_(o.Cantidad), pactada: fmtDate_(toDate_(o['Fecha Entrega Pactada'])) })),
+      .map(o => ({ oc: String(o.OC), proveedor: o.Proveedor, codigo: String(o['Código']), producto: o.Producto, cantidad: num_(o.Cantidad), pactada: fmtDate_(toDate_(o['Fecha Entrega Pactada'])) })),
   };
 }
 
@@ -56,7 +112,7 @@ function registrarRechazo(f) {
 
     let costoUnit = num_(f.costoUnitario);
     if (!costoUnit) {
-      const prod = readTable_('PRODUCTOS').find(p => p['Código'] === f.codigo);
+      const prod = readTable_('PRODUCTOS').find(p => String(p['Código']) === String(f.codigo));
       costoUnit = prod ? num_(prod['Precio Base']) : 0;
     }
 
@@ -69,7 +125,7 @@ function registrarRechazo(f) {
     }
 
     appendRows_('RECHAZOS', [{
-      ID: id, Fecha: f.fecha ? new Date(f.fecha + 'T00:00:00') : new Date(), Proveedor: f.proveedor, 'Código': f.codigo,
+      ID: id, Fecha: f.fecha ? parseFecha_(f.fecha) : startOfDay_(new Date()), Proveedor: f.proveedor, 'Código': f.codigo,
       Lote: f.lote, Cantidad: num_(f.cantidad), 'Costo Unitario': costoUnit, 'Costo Total': num_(f.cantidad) * costoUnit,
       Motivo: f.motivo, 'Descripción NC': f.descripcion, Estado: 'Abierto', Evidencia: evidencia, 'Registrado Por': currentUser_(),
     }]);
@@ -81,15 +137,25 @@ function registrarRechazo(f) {
 
 /** Recepción en bodega contra OC: alimenta OTIF y actualiza el estado de la OC. */
 function registrarRecepcion(f) {
-  const oc = readTable_('ORDENES').find(o => o.OC === f.oc);
-  if (!oc) throw new Error('OC no encontrada: ' + f.oc);
   const recibida = num_(f.cantidadRecibida);
-  if (!(recibida >= 0)) throw new Error('Cantidad recibida inválida.');
-  const real = f.fechaReal ? new Date(f.fechaReal + 'T00:00:00') : startOfDay_(new Date());
-  const row = entregaRow_(oc.OC, oc.Proveedor, oc['Código'], num_(oc.Cantidad), recibida, toDate_(oc['Fecha Entrega Pactada']), real, currentUser_());
-  appendRows_('ENTREGAS', [row]);
+  if (!f.oc) throw new Error('Selecciona la orden de compra.');
+  if (!(recibida > 0)) throw new Error('La cantidad recibida debe ser mayor que cero.');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    // Una OC puede tener varias líneas (productos): se usa la línea del código elegido, o la primera abierta
+    const lineas = readTable_('ORDENES').filter(o => String(o.OC) === String(f.oc));
+    const oc = lineas.find(o => f.codigo && String(o['Código']) === String(f.codigo)) || lineas.find(o => o.Estado !== 'Recibida') || lineas[0];
+    if (!oc) throw new Error('OC no encontrada: ' + f.oc);
+    const real = f.fechaReal ? parseFecha_(f.fechaReal) : startOfDay_(new Date());
+    const row = entregaRow_(String(oc.OC), oc.Proveedor, String(oc['Código']), num_(oc.Cantidad), recibida, toDate_(oc['Fecha Entrega Pactada']), real, currentUser_());
+    appendRows_('ENTREGAS', [row]);
 
-  const totalRecibido = sum_(readTable_('ENTREGAS').filter(e => e.OC === oc.OC), e => num_(e['Cantidad Recibida']));
-  setCell_('ORDENES', oc._row, 'Estado', totalRecibido >= num_(oc.Cantidad) ? 'Recibida' : 'Recibida parcial');
-  return { otif: row.OTIF, aTiempo: row['A Tiempo'], completa: row.Completa };
+    const totalRecibido = sum_(readTable_('ENTREGAS')
+      .filter(e => String(e.OC) === String(oc.OC) && String(e['Código']) === String(oc['Código'])), e => num_(e['Cantidad Recibida']));
+    setCell_('ORDENES', oc._row, 'Estado', totalRecibido >= num_(oc.Cantidad) ? 'Recibida' : 'Recibida parcial');
+    return { otif: row.OTIF, aTiempo: row['A Tiempo'], completa: row.Completa };
+  } finally {
+    lock.releaseLock();
+  }
 }

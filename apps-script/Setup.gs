@@ -19,18 +19,7 @@ function onOpen() {
 
 function inicializar() {
   const ss = ss_();
-  Object.keys(SHEETS).forEach(key => {
-    const def = SHEETS[key];
-    let sh = ss.getSheetByName(def.name);
-    if (!sh) sh = ss.insertSheet(def.name);
-    if (!def.headers.length) return;
-    const hdr = sh.getRange(1, 1, 1, def.headers.length);
-    hdr.setValues([def.headers])
-      .setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e')
-      .setWrap(true).setVerticalAlignment('middle');
-    sh.setFrozenRows(1);
-    formatColumns_(sh, def);
-  });
+  Object.keys(SHEETS).forEach(crearHoja_);
 
   // Parámetros por defecto (no sobreescribe los existentes)
   const existentes = readTable_('CONFIG').map(r => r['Parámetro']);
@@ -235,6 +224,14 @@ function cargarDatosDemo() {
   appendRows_('VENTAS', ventas);
   appendRows_('PRESUPUESTO', presupuesto);
   appendRows_('PROYECTOS', proyectos);
+  const perAnt = periodOf_(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1));
+  appendRows_('ANALISIS', [
+    { Periodo: perAnt, Indicador: 'otif', Nombre: 'OTIF proveedores', 'Análisis': 'Envases Colombia entregó 2 pedidos con faltantes por falta de material en su planta.',
+      'Plan de Acción': 'Reunión de seguimiento semanal y activar a Etiquetas Express como proveedor alterno.', Responsable: 'Compras ME',
+      'Fecha Compromiso': addDays_(hoy, 15), Autor: 'demo', Actualizado: new Date() },
+    { Periodo: perAnt, Indicador: 'pagos', Nombre: 'Cumplimiento de pagos', 'Análisis': 'Retraso de tesorería en la segunda quincena por cierre contable.',
+      'Plan de Acción': 'Programar pagos críticos con 5 días de anticipación.', Responsable: 'Tesorería', Autor: 'demo', Actualizado: new Date() },
+  ]);
 
   actualizarDashboard();
   ui.alert('Datos demo cargados ✅ Abre 🛒 Compras › Abrir dashboard.');

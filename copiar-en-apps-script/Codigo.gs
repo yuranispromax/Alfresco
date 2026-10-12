@@ -90,6 +90,10 @@ const SHEETS = {
     name: 'Cargas',
     headers: ['Fecha', 'Módulo', 'Tabla', 'Archivo', 'Filas', 'Modo', 'Usuario', 'Drive'],
   },
+  ANALISIS: {
+    name: 'Analisis',
+    headers: ['Periodo', 'Indicador', 'Nombre', 'Análisis', 'Plan de Acción', 'Responsable', 'Fecha Compromiso', 'Autor', 'Actualizado'],
+  },
   HISTORICO: {
     name: 'KPI Historico',
     headers: ['Periodo', 'Indicador', 'Valor', 'Meta', 'Semáforo', 'Actualizado'],
@@ -201,10 +205,21 @@ function ss_() {
   return SpreadsheetApp.getActive();
 }
 
+/** Hoja de una tabla; si no existe (p. ej. tras una actualización del sistema) se crea con su formato. */
 function sheet_(key) {
+  return ss_().getSheetByName(SHEETS[key].name) || crearHoja_(key);
+}
+
+function crearHoja_(key) {
   const def = SHEETS[key];
-  const sh = ss_().getSheetByName(def.name);
-  if (!sh) throw new Error(`Falta la hoja "${def.name}". Ejecuta 🛒 Compras › Inicializar estructura.`);
+  const sh = ss_().getSheetByName(def.name) || ss_().insertSheet(def.name);
+  if (def.headers.length) {
+    sh.getRange(1, 1, 1, def.headers.length).setValues([def.headers])
+      .setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e')
+      .setWrap(true).setVerticalAlignment('middle');
+    sh.setFrozenRows(1);
+    formatColumns_(sh, def);
+  }
   return sh;
 }
 
@@ -233,9 +248,19 @@ function appendRows_(key, objs) {
   if (!objs.length) return;
   const headers = SHEETS[key].headers;
   const sh = sheet_(key);
-  const rows = objs.map(o => headers.map(h => (o[h] === undefined || o[h] === null) ? '' : o[h]));
-  sh.getRange(sh.getLastRow() + 1, 1, rows.length, headers.length).setValues(rows);
+  const rows = objs.map(o => headers.map(h => celda_(o[h])));
+  const start = sh.getLastRow() + 1;
+  const falta = start + rows.length - 1 - sh.getMaxRows();
+  if (falta > 0) sh.insertRowsAfter(sh.getMaxRows(), falta + 100); // la hoja crece sola
+  sh.getRange(start, 1, rows.length, headers.length).setValues(rows);
   invalidate_(key);
+}
+
+/** Valor seguro para escribir: vacío si no hay dato; texto que empieza por "=" no se ejecuta como fórmula. */
+function celda_(v) {
+  if (v === undefined || v === null) return '';
+  if (typeof v === 'string' && /^[=+@]/.test(v)) return "'" + v;
+  return v;
 }
 
 function setCell_(key, row, header, value) {
@@ -266,19 +291,50 @@ function setConfig_(key, value) {
 
 /* ---------- tipos ---------- */
 
+/**
+ * Número desde texto en formato colombiano o internacional:
+ * "1.500.000" · "1.500.000,50" · "1,500,000.50" · "$ 2.000" · "7850" → número.
+ */
 function num_(v) {
-  if (typeof v === 'number') return v;
-  let s = String(v).replace(/[$\s%]/g, '');
-  if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.'); // formato 1.234,5
+  if (typeof v === 'number') return isFinite(v) ? v : 0;
+  if (v === null || v === undefined || v === '') return 0;
+  let s = String(v).replace(/[$\s%\u00a0]/g, '');
+  const coma = s.lastIndexOf(','), punto = s.lastIndexOf('.');
+  if (coma > -1 && punto > -1) {
+    s = coma > punto ? s.replace(/\./g, '').replace(',', '.') : s.replace(/,/g, '');
+  } else if (coma > -1) {
+    s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+  } else if (punto > -1 && /^-?\d{1,3}(\.\d{3})+$/.test(s)) {
+    s = s.replace(/\./g, '');
+  }
   const n = Number(s);
   return isFinite(n) ? n : 0;
 }
 
+/** Fecha desde Date, 'aaaa-mm-dd', 'dd/mm/aaaa' o serial de Excel (siempre en hora local). */
 function toDate_(v) {
   if (!v) return null;
   if (v instanceof Date) return isNaN(v) ? null : v;
-  const d = new Date(v);
-  return isNaN(d) ? null : d;
+  const d = parseFecha_(v);
+  return d instanceof Date && !isNaN(d) ? d : null;
+}
+
+function parseFecha_(v) {
+  if (v instanceof Date) return v;
+  if (typeof v === 'number') {
+    const utc = new Date(Math.round((v - 25569) * 86400000));
+    return new Date(utc.getUTCFullYear(), utc.getUTCMonth(), utc.getUTCDate());
+  }
+  const t = String(v).trim();
+  const crear = (y, mo, d) => {
+    const f = new Date(y, mo - 1, d);
+    return f.getFullYear() === y && f.getMonth() === mo - 1 && f.getDate() === d ? f : v; // rechaza 31/02, 99/99…
+  };
+  let m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return crear(+m[1], +m[2], +m[3]);
+  m = t.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})(?:\s.*)?$/);
+  if (m) return crear(m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[2], +m[1]);
+  return v;
 }
 
 function startOfDay_(d) {
@@ -327,6 +383,11 @@ function fmtPct_(n) {
   return n === null || n === undefined ? '—' : (n * 100).toFixed(1).replace('.', ',') + '%';
 }
 
+/** "1 rechazo", "3 rechazos" · plural irregular opcional. */
+function plural_(n, uno, varios) {
+  return `${n} ${n === 1 ? uno : (varios || uno + 's')}`;
+}
+
 function sum_(arr, fn) {
   return arr.reduce((a, x) => a + fn(x), 0);
 }
@@ -336,7 +397,7 @@ function ratio_(a, b) {
 }
 
 function escapeHtml_(s) {
-  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function currentUser_() {
@@ -455,7 +516,7 @@ function calcularIndicadores(periodo) {
   LISTAS.ESTADO_PROYECTO.forEach(e => { proyectosEstado[e] = 0; });
   readTable_('PROYECTOS').forEach(p => { if (p.Estado in proyectosEstado) proyectosEstado[p.Estado]++; });
   kpis.push(kpi_('proyectos', 'Proyectos concluidos / Total', ratio_(concluidos, proyectos.length),
-    cfg.META_PROYECTOS, 'pct', true, `${concluidos} de ${proyectos.length} · ${proyVencidos.length} vencidos`));
+    cfg.META_PROYECTOS, 'pct', true, `${concluidos} de ${plural_(proyectos.length, 'proyecto')} · ${plural_(proyVencidos.length, 'vencido')}`));
 
   /* 2. Participación Compras / Ventas + ejecución de presupuesto */
   const ocs = readTable_('ORDENES').filter(o => o.Estado !== 'Cancelada' && enPeriodo(o.Fecha));
@@ -473,7 +534,7 @@ function calcularIndicadores(periodo) {
   const baseNeg = sum_(negs, n => num_(n['Precio Anterior']) * num_(n['Volumen Anual']));
   const varNeg = ratio_(sum_(negs, n => (num_(n['Precio Negociado']) - num_(n['Precio Anterior'])) * num_(n['Volumen Anual'])), baseNeg);
   kpis.push(kpi_('ahorro', 'Ahorro tras negociación', readTable_('NEGOCIACIONES').length ? ahorro : null, cfg.META_AHORRO, 'money', true,
-    `${negs.length} negociaciones · variación ponderada ${fmtPct_(varNeg)}`));
+    `${plural_(negs.length, 'negociación', 'negociaciones')} en el mes · variación ponderada ${fmtPct_(varNeg)}`));
 
   /* 4. Costo bodega de rechazos */
   const rechazos = readTable_('RECHAZOS');
@@ -484,7 +545,7 @@ function calcularIndicadores(periodo) {
     .map(r => ({ id: r.ID, proveedor: r.Proveedor, codigo: r['Código'], costo: num_(r.Cantidad) * num_(r['Costo Unitario']), estado: r.Estado, dias: toDate_(r.Fecha) ? daysBetween_(toDate_(r.Fecha), hoy) : 0 }))
     .sort((a, b) => b.dias - a.dias);
   kpis.push(kpi_('rechazos', 'Costo bodega de rechazos', rechazos.length ? costoRech : null, cfg.META_COSTO_RECHAZOS, 'money', false,
-    `${rechPeriodo.length} rechazos en el mes · ${rechAbiertos.length} sin cerrar (${fmtMoney_(sum_(rechAbiertos, r => r.costo))})`));
+    `${plural_(rechPeriodo.length, 'rechazo')} en el mes · ${rechAbiertos.length} sin cerrar (${fmtMoney_(sum_(rechAbiertos, r => r.costo))})`));
 
   /* 5. Cumplimiento de pagos a proveedores */
   const pagos = readTable_('PAGOS');
@@ -497,7 +558,7 @@ function calcularIndicadores(periodo) {
     .map(p => ({ ...p, vence: fmtDate_(p.vence) }));
   const carteraVencida = sum_(pagosCriticos.filter(p => p.estado === 'Vencida'), p => p.valor);
   kpis.push(kpi_('pagos', 'Cumplimiento de pagos a proveedores', ratio_(aTiempo, exigibles.length), cfg.META_PAGOS, 'pct', true,
-    `${aTiempo} de ${exigibles.length} facturas a tiempo · cartera vencida ${fmtMoney_(carteraVencida)}`));
+    `${aTiempo} de ${plural_(exigibles.length, 'factura')} pagadas a tiempo · cartera vencida ${fmtMoney_(carteraVencida)}`));
 
   /* 6. OTIF por proveedor */
   const entregas = readTable_('ENTREGAS').filter(e => enPeriodo(e['Fecha Pactada']) && toDate_(e['Fecha Real']));
@@ -515,7 +576,7 @@ function calcularIndicadores(periodo) {
     .sort((a, b) => a.pct - b.pct);
   const otifTotal = sum_(otifProveedores, p => p.otif);
   kpis.push(kpi_('otif', 'OTIF proveedores', ratio_(otifTotal, entregas.length), cfg.META_OTIF, 'pct', true,
-    `${otifTotal} de ${entregas.length} entregas completas y a tiempo`));
+    `${otifTotal} de ${plural_(entregas.length, 'entrega')} completas y a tiempo`));
 
   /* 7. Variación de precios listado Pareto (precio medio ponderado de OC vs mes anterior) */
   const pareto = {};
@@ -544,7 +605,7 @@ function calcularIndicadores(periodo) {
   const umbral = num_(cfg.UMBRAL_VARIACION_PRECIO);
   const alertasPrecios = variaciones.filter(v => v.variacion > umbral);
   kpis.push(kpi_('precios_pareto', 'Variación de precios Pareto', varPareto, cfg.META_VAR_PRECIOS, 'pct', false,
-    `${variaciones.length} productos comparados vs ${prev} · ${alertasPrecios.length} sobre umbral ${fmtPct_(umbral)}`));
+    `${plural_(variaciones.length, 'producto')} comparados vs ${prev} · ${alertasPrecios.length} sobre umbral ${fmtPct_(umbral)}`));
 
   return {
     periodo,
@@ -601,11 +662,17 @@ function pintarDashboard_(data) {
   sh.getRange('A1').setValue('GESTIÓN DE COMPRAS · DIRECCIÓN').setFontSize(16).setFontWeight('bold').setFontColor('#c8102e');
   sh.getRange('A2').setValue(`Periodo ${data.periodo} · actualizado ${data.generado}`).setFontColor('#666666');
 
-  const rows = [['Indicador', 'Resultado', 'Meta', 'Semáforo', 'Detalle']]
-    .concat(data.kpis.map(k => [k.nombre, k.valorTxt, k.metaTxt, k.semaforo.toUpperCase(), k.detalle]));
-  sh.getRange(4, 1, rows.length, 5).setValues(rows);
-  sh.getRange(4, 1, 1, 5).setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e');
-  data.kpis.forEach((k, i) => sh.getRange(5 + i, 1, 1, 5).setBackground(COLORES_SEMAFORO[k.semaforo]));
+  const notas = analisisPeriodo_(data.periodo);
+  const rows = [['Indicador', 'Resultado', 'Meta', 'Semáforo', 'Detalle', 'Análisis / plan de acción']]
+    .concat(data.kpis.map(k => {
+      const a = notas[k.id];
+      return [k.nombre, k.valorTxt, k.metaTxt, k.semaforo.toUpperCase(), k.detalle,
+        a ? celda_([a.analisis, a.plan && 'Plan: ' + a.plan].filter(Boolean).join(' · ')) : ''];
+    }));
+  sh.getRange(4, 1, rows.length, 6).setValues(rows);
+  sh.getRange(4, 1, 1, 6).setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e');
+  sh.getRange(5, 6, rows.length - 1, 1).setWrap(true);
+  data.kpis.forEach((k, i) => sh.getRange(5 + i, 1, 1, 6).setBackground(COLORES_SEMAFORO[k.semaforo]));
 
   let r = 6 + rows.length;
   r = bloque_(sh, r, 'OTIF por proveedor', ['Proveedor', 'Entregas', 'A tiempo', 'Completas', 'OTIF %'],
@@ -619,7 +686,7 @@ function pintarDashboard_(data) {
   bloque_(sh, r, 'Proyectos vencidos', ['ID', 'Proyecto', 'Compromiso', 'Avance', ''],
     data.proyVencidos.map(p => [p.id, p.proyecto, p.compromiso, fmtPct_(p.avance), '']));
 
-  sh.setColumnWidth(1, 300).setColumnWidth(2, 200).setColumnWidth(3, 140).setColumnWidth(4, 140).setColumnWidth(5, 520);
+  sh.setColumnWidth(1, 300).setColumnWidth(2, 200).setColumnWidth(3, 140).setColumnWidth(4, 140).setColumnWidth(5, 460).setColumnWidth(6, 420);
 }
 
 function bloque_(sh, r, titulo, headers, rows) {
@@ -672,22 +739,29 @@ function tablasCargables_() {
 }
 
 function normHeader_(s) {
-  return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  return String(s).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-/** Encabezado del archivo → columna del sistema (o null si no se reconoce). */
+/**
+ * Encabezado del archivo → columna del sistema (o null si no se reconoce).
+ * Primero los nombres exactos y luego los sinónimos, para que un sinónimo no
+ * le quite la columna a un encabezado que coincide exactamente.
+ */
 function mapearColumnas_(key, encabezados) {
   const destino = SHEETS[key].headers;
+  const norm = encabezados.map(normHeader_);
+  const mapa = encabezados.map(() => null);
   const usados = new Set();
-  return encabezados.map(h => {
-    const n = normHeader_(h);
-    if (!n) return null;
-    let col = destino.find(d => normHeader_(d) === n);
-    if (!col) col = destino.find(d => (ALIAS[d] || []).includes(n));
-    if (!col || usados.has(col)) return null;
-    usados.add(col);
-    return col;
+  norm.forEach((n, i) => {
+    const col = n && destino.find(d => normHeader_(d) === n);
+    if (col && !usados.has(col)) { mapa[i] = col; usados.add(col); }
   });
+  norm.forEach((n, i) => {
+    if (mapa[i] || !n) return;
+    const col = destino.find(d => !usados.has(d) && (ALIAS[d] || []).includes(n));
+    if (col) { mapa[i] = col; usados.add(col); }
+  });
+  return mapa;
 }
 
 function getEsquema() {
@@ -713,26 +787,23 @@ function previsualizarCarga(key, encabezados) {
   };
 }
 
-function convertirValor_(header, v) {
+const COLUMNAS_TEXTO = ['OC', 'Código', 'Factura', 'NIT', 'Lote', 'ID', 'Proveedor', 'Proveedor Principal', 'Proveedor Alterno'];
+
+function convertirValor_(key, header, v) {
   if (v === null || v === undefined) return '';
   if (typeof v === 'string') v = v.trim();
   if (v === '') return '';
   if (header === 'Periodo') return normPeriodo_(v);
   if (/^Fecha|Licitación$/.test(header)) return parseFecha_(v);
-  if (/Cantidad|Precio|Costo|Valor$|^Total|Presupuesto|^Ventas|Volumen|Stock|Rotación|Ahorro/.test(header)) return num_(v);
+  if (COLUMNAS_TEXTO.includes(header)) return String(v).trim();
   if (header === 'Avance %') { const n = num_(v); return n > 1 ? n / 100 : n; }
+  if (/Cantidad|Precio|Costo|Valor$|^Total|Presupuesto|^Ventas|Volumen|Stock|Rotación|Ahorro/.test(header)) return num_(v);
   if (header === 'Pareto' || header === 'Paro Entregas') return /^(s|si|sí|x|1|true|yes)$/i.test(String(v)) ? 'Sí' : 'No';
-  return v;
-}
-
-/** Acepta 'yyyy-mm-dd' (lo que envía el navegador), 'dd/mm/yyyy' y seriales de Excel. */
-function parseFecha_(v) {
-  if (v instanceof Date) return v;
-  if (typeof v === 'number') return new Date(Math.round((v - 25569) * 86400000) + new Date().getTimezoneOffset() * 60000);
-  let m = String(v).match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (m) return new Date(+m[1], +m[2] - 1, +m[3]);
-  m = String(v).match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{2,4})/);
-  if (m) return new Date(m[3].length === 2 ? 2000 + +m[3] : +m[3], +m[2] - 1, +m[1]);
+  const lista = SHEETS[key].lists && SHEETS[key].lists[header];
+  if (lista) {
+    const n = normHeader_(v);
+    return lista.find(x => normHeader_(x) === n) || v; // "CONCLUIDO" → "Concluido"
+  }
   return v;
 }
 
@@ -747,11 +818,18 @@ function cargarDatos(payload) {
   const objs = payload.filas
     .map(fila => {
       const o = {};
-      prev.mapa.forEach((col, i) => { if (col) o[col] = convertirValor_(col, fila[i]); });
+      prev.mapa.forEach((col, i) => { if (col) o[col] = convertirValor_(key, col, fila[i]); });
       return o;
     })
     .filter(o => REQUERIDOS[key].some(r => o[r] !== '' && o[r] !== undefined));
   if (!objs.length) throw new Error('El archivo no tiene filas con datos.');
+
+  // Avisos: filas sin datos obligatorios o con fechas que no se pudieron leer
+  const avisos = [];
+  const incompletas = objs.filter(o => REQUERIDOS[key].some(r => o[r] === '' || o[r] === undefined)).length;
+  if (incompletas) avisos.push(`${incompletas} fila(s) con columnas obligatorias vacías`);
+  const fechasMal = objs.filter(o => Object.keys(o).some(h => /^Fecha/.test(h) && o[h] !== '' && !(o[h] instanceof Date))).length;
+  if (fechasMal) avisos.push(`${fechasMal} fila(s) con fechas que no se reconocieron (usa dd/mm/aaaa)`);
 
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -761,6 +839,7 @@ function cargarDatos(payload) {
       sh.getRange(2, 1, sh.getLastRow() - 1, SHEETS[key].headers.length).clearContent();
       invalidate_(key);
     }
+    asignarIds_(key, objs);
     appendRows_(key, objs);
 
     const url = archivarAdjunto_(key, payload.archivo);
@@ -774,7 +853,17 @@ function cargarDatos(payload) {
   }
 
   actualizarDashboard(payload.periodo);
-  return { filas: objs.length, ignoradas: prev.ignoradas, tabla: SHEETS[key].name };
+  return { filas: objs.length, ignoradas: prev.ignoradas, tabla: SHEETS[key].name, avisos };
+}
+
+/** Rechazos y proyectos sin ID reciben uno consecutivo (RCH-0001, PRY-1…). */
+function asignarIds_(key, objs) {
+  const pref = { RECHAZOS: ['RCH-', 4], PROYECTOS: ['PRY-', 0] }[key];
+  if (!pref) return;
+  let n = readTable_(key).concat(objs).reduce((m, r) => Math.max(m, Number(String(r.ID || '').replace(/\D/g, '')) || 0), 0);
+  objs.forEach(o => {
+    if (!o.ID) o.ID = pref[0] + (pref[1] ? String(++n).padStart(pref[1], '0') : String(++n));
+  });
 }
 
 /** Guarda el archivo original en Drive › Gestión de Compras › Adjuntos › <tabla>. */
@@ -812,9 +901,11 @@ function revisionDiaria() {
   const diasRech = num_(cfg.RECHAZO_DIAS_ALERTA);
   const rechViejos = data.rechAbiertos.filter(r => r.dias > diasRech);
   const rojos = data.kpis.filter(k => k.semaforo === 'rojo');
+  const notas = analisisPeriodo_(data.periodo);
 
   const secciones = [
-    tablaHtml_('🚦 Indicadores en rojo', ['Indicador', 'Resultado', 'Meta'], rojos.map(k => [k.nombre, k.valorTxt, k.metaTxt])),
+    tablaHtml_('🚦 Indicadores en rojo', ['Indicador', 'Resultado', 'Meta', 'Análisis / plan'],
+      rojos.map(k => [k.nombre, k.valorTxt, k.metaTxt, notas[k.id] ? (notas[k.id].plan || notas[k.id].analisis) : 'Sin análisis registrado'])),
     tablaHtml_('💸 Pagos vencidos / por vencer (riesgo de paro de entregas)', ['Factura', 'Proveedor', 'Valor', 'Vence', 'Estado'],
       data.pagosCriticos.map(p => [p.factura, p.proveedor, fmtMoney_(p.valor), p.vence, `${p.estado}${p.mora ? ' (' + p.mora + ' d)' : ''}`])),
     tablaHtml_(`📦 Rechazos abiertos > ${diasRech} días`, ['ID', 'Proveedor', 'Costo', 'Estado', 'Días'],
@@ -825,12 +916,16 @@ function revisionDiaria() {
       data.proyVencidos.map(p => [p.id, p.proyecto, p.compromiso, fmtPct_(p.avance)])),
   ].filter(Boolean);
 
-  if (!secciones.length) return;
+  if (!secciones.length) {
+    avisar_('Hoy no hay alertas: ningún indicador en rojo, pago crítico, rechazo vencido, alza de precio ni proyecto vencido.');
+    return;
+  }
   const html = `<div style="font-family:Nourd,Outfit,Arial,sans-serif;color:#222">
     <h2 style="color:#c8102e;margin:0">Gestión de Compras · alerta diaria</h2>
     <p style="color:#666">Periodo ${data.periodo} · ${data.generado} · <a href="${ss_().getUrl()}">Abrir hoja</a></p>
     ${secciones.join('')}</div>`;
   MailApp.sendEmail({ to: destino, subject: `[Compras] ${rojos.length} indicadores en rojo · ${data.pagosCriticos.length} pagos críticos`, htmlBody: html, name: APP.NAME });
+  avisar_('Alerta enviada a ' + destino);
 }
 
 function tablaHtml_(titulo, headers, rows) {
@@ -873,7 +968,7 @@ function notificarRechazos() {
            ['Motivo', r.Motivo], ['Descripción', r['Descripción NC']]]
           .map(([k, v]) => `<tr><td style="padding:4px 10px;background:#f5f5f5"><b>${k}</b></td><td style="padding:4px 10px">${escapeHtml_(v)}</td></tr>`).join('')}
       </table>
-      ${r.Evidencia ? `<p>Evidencia: <a href="${r.Evidencia}">ver en Drive</a></p>` : ''}
+      ${r.Evidencia ? `<p>Evidencia: <a href="${escapeHtml_(r.Evidencia)}">ver en Drive</a></p>` : ''}
       <p>Solicitamos: (1) análisis de causa raíz y plan de acción en máximo 5 días hábiles y
       (2) coordinar el retiro o reposición del material.</p>
       <p>Cordialmente,<br>Dirección de Compras · ${escapeHtml_(cfg.EMPRESA)}</p></div>`;
@@ -977,17 +1072,73 @@ function getDashboardData(periodo) {
     conteos,
     esquema: getEsquema(),
     cargas: getCargas().slice(0, 10),
+    analisis: analisisPeriodo_(data.periodo),
   });
+}
+
+/* ---------- Análisis / observaciones por indicador y periodo ---------- */
+
+function analisisFila_(r) {
+  return {
+    periodo: normPeriodo_(r.Periodo), indicador: r.Indicador, analisis: String(r['Análisis'] || ''),
+    plan: String(r['Plan de Acción'] || ''), responsable: String(r.Responsable || ''),
+    compromiso: toDate_(r['Fecha Compromiso']) ? Utilities.formatDate(toDate_(r['Fecha Compromiso']), APP.TZ, 'yyyy-MM-dd') : '',
+    autor: String(r.Autor || ''),
+    actualizado: toDate_(r.Actualizado) ? Utilities.formatDate(toDate_(r.Actualizado), APP.TZ, 'dd/MM/yyyy HH:mm') : '',
+  };
+}
+
+/** { idIndicador: análisis } del periodo. */
+function analisisPeriodo_(periodo) {
+  const out = {};
+  readTable_('ANALISIS').filter(r => normPeriodo_(r.Periodo) === periodo).forEach(r => { out[r.Indicador] = analisisFila_(r); });
+  return out;
+}
+
+/** Historial de análisis de un indicador (más reciente primero). */
+function getHistorialAnalisis(indicador) {
+  return readTable_('ANALISIS').filter(r => r.Indicador === indicador).map(analisisFila_)
+    .sort((a, b) => (a.periodo < b.periodo ? 1 : -1)).slice(0, 12);
+}
+
+/** Crea o actualiza el análisis de (periodo, indicador). */
+function guardarAnalisis(d) {
+  const periodo = normPeriodo_(d.periodo);
+  const mod = MODULOS.find(m => m.id === d.indicador);
+  if (!mod || !/^\d{4}-\d{2}$/.test(periodo)) throw new Error('Indicador o periodo no válido.');
+  if (!String(d.analisis || '').trim() && !String(d.plan || '').trim()) throw new Error('Escribe el análisis o el plan de acción.');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    const fila = {
+      Periodo: periodo, Indicador: d.indicador, Nombre: mod.titulo,
+      'Análisis': String(d.analisis || '').trim(), 'Plan de Acción': String(d.plan || '').trim(),
+      Responsable: String(d.responsable || '').trim(),
+      'Fecha Compromiso': d.compromiso ? parseFecha_(d.compromiso) : '',
+      Autor: currentUser_(), Actualizado: new Date(),
+    };
+    const ex = readTable_('ANALISIS').find(r => normPeriodo_(r.Periodo) === periodo && r.Indicador === d.indicador);
+    if (ex) {
+      sheet_('ANALISIS').getRange(ex._row, 1, 1, SHEETS.ANALISIS.headers.length)
+        .setValues([SHEETS.ANALISIS.headers.map(h => celda_(fila[h]))]);
+      invalidate_('ANALISIS');
+    } else {
+      appendRows_('ANALISIS', [fila]);
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  return analisisPeriodo_(periodo)[d.indicador];
 }
 
 function getCatalogos() {
   return {
     proveedores: readTable_('PROVEEDORES').filter(p => p.Estado !== 'Inactivo').map(p => p.Proveedor),
     productos: readTable_('PRODUCTOS').filter(p => p.Estado !== 'Inactivo')
-      .map(p => ({ codigo: p['Código'], nombre: p.Producto, precio: num_(p['Precio Base']) })),
+      .map(p => ({ codigo: String(p['Código']), nombre: p.Producto, precio: num_(p['Precio Base']) })),
     motivos: LISTAS.MOTIVO_RECHAZO,
     ordenesAbiertas: readTable_('ORDENES').filter(o => o.Estado === 'Abierta' || o.Estado === 'Recibida parcial')
-      .map(o => ({ oc: o.OC, proveedor: o.Proveedor, codigo: o['Código'], producto: o.Producto, cantidad: num_(o.Cantidad), pactada: fmtDate_(toDate_(o['Fecha Entrega Pactada'])) })),
+      .map(o => ({ oc: String(o.OC), proveedor: o.Proveedor, codigo: String(o['Código']), producto: o.Producto, cantidad: num_(o.Cantidad), pactada: fmtDate_(toDate_(o['Fecha Entrega Pactada'])) })),
   };
 }
 
@@ -1003,7 +1154,7 @@ function registrarRechazo(f) {
 
     let costoUnit = num_(f.costoUnitario);
     if (!costoUnit) {
-      const prod = readTable_('PRODUCTOS').find(p => p['Código'] === f.codigo);
+      const prod = readTable_('PRODUCTOS').find(p => String(p['Código']) === String(f.codigo));
       costoUnit = prod ? num_(prod['Precio Base']) : 0;
     }
 
@@ -1016,7 +1167,7 @@ function registrarRechazo(f) {
     }
 
     appendRows_('RECHAZOS', [{
-      ID: id, Fecha: f.fecha ? new Date(f.fecha + 'T00:00:00') : new Date(), Proveedor: f.proveedor, 'Código': f.codigo,
+      ID: id, Fecha: f.fecha ? parseFecha_(f.fecha) : startOfDay_(new Date()), Proveedor: f.proveedor, 'Código': f.codigo,
       Lote: f.lote, Cantidad: num_(f.cantidad), 'Costo Unitario': costoUnit, 'Costo Total': num_(f.cantidad) * costoUnit,
       Motivo: f.motivo, 'Descripción NC': f.descripcion, Estado: 'Abierto', Evidencia: evidencia, 'Registrado Por': currentUser_(),
     }]);
@@ -1028,17 +1179,27 @@ function registrarRechazo(f) {
 
 /** Recepción en bodega contra OC: alimenta OTIF y actualiza el estado de la OC. */
 function registrarRecepcion(f) {
-  const oc = readTable_('ORDENES').find(o => o.OC === f.oc);
-  if (!oc) throw new Error('OC no encontrada: ' + f.oc);
   const recibida = num_(f.cantidadRecibida);
-  if (!(recibida >= 0)) throw new Error('Cantidad recibida inválida.');
-  const real = f.fechaReal ? new Date(f.fechaReal + 'T00:00:00') : startOfDay_(new Date());
-  const row = entregaRow_(oc.OC, oc.Proveedor, oc['Código'], num_(oc.Cantidad), recibida, toDate_(oc['Fecha Entrega Pactada']), real, currentUser_());
-  appendRows_('ENTREGAS', [row]);
+  if (!f.oc) throw new Error('Selecciona la orden de compra.');
+  if (!(recibida > 0)) throw new Error('La cantidad recibida debe ser mayor que cero.');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    // Una OC puede tener varias líneas (productos): se usa la línea del código elegido, o la primera abierta
+    const lineas = readTable_('ORDENES').filter(o => String(o.OC) === String(f.oc));
+    const oc = lineas.find(o => f.codigo && String(o['Código']) === String(f.codigo)) || lineas.find(o => o.Estado !== 'Recibida') || lineas[0];
+    if (!oc) throw new Error('OC no encontrada: ' + f.oc);
+    const real = f.fechaReal ? parseFecha_(f.fechaReal) : startOfDay_(new Date());
+    const row = entregaRow_(String(oc.OC), oc.Proveedor, String(oc['Código']), num_(oc.Cantidad), recibida, toDate_(oc['Fecha Entrega Pactada']), real, currentUser_());
+    appendRows_('ENTREGAS', [row]);
 
-  const totalRecibido = sum_(readTable_('ENTREGAS').filter(e => e.OC === oc.OC), e => num_(e['Cantidad Recibida']));
-  setCell_('ORDENES', oc._row, 'Estado', totalRecibido >= num_(oc.Cantidad) ? 'Recibida' : 'Recibida parcial');
-  return { otif: row.OTIF, aTiempo: row['A Tiempo'], completa: row.Completa };
+    const totalRecibido = sum_(readTable_('ENTREGAS')
+      .filter(e => String(e.OC) === String(oc.OC) && String(e['Código']) === String(oc['Código'])), e => num_(e['Cantidad Recibida']));
+    setCell_('ORDENES', oc._row, 'Estado', totalRecibido >= num_(oc.Cantidad) ? 'Recibida' : 'Recibida parcial');
+    return { otif: row.OTIF, aTiempo: row['A Tiempo'], completa: row.Completa };
+  } finally {
+    lock.releaseLock();
+  }
 }
 
 /* ======================= Setup ======================= */
@@ -1064,18 +1225,7 @@ function onOpen() {
 
 function inicializar() {
   const ss = ss_();
-  Object.keys(SHEETS).forEach(key => {
-    const def = SHEETS[key];
-    let sh = ss.getSheetByName(def.name);
-    if (!sh) sh = ss.insertSheet(def.name);
-    if (!def.headers.length) return;
-    const hdr = sh.getRange(1, 1, 1, def.headers.length);
-    hdr.setValues([def.headers])
-      .setFontWeight('bold').setFontColor('#ffffff').setBackground('#c8102e')
-      .setWrap(true).setVerticalAlignment('middle');
-    sh.setFrozenRows(1);
-    formatColumns_(sh, def);
-  });
+  Object.keys(SHEETS).forEach(crearHoja_);
 
   // Parámetros por defecto (no sobreescribe los existentes)
   const existentes = readTable_('CONFIG').map(r => r['Parámetro']);
@@ -1280,6 +1430,14 @@ function cargarDatosDemo() {
   appendRows_('VENTAS', ventas);
   appendRows_('PRESUPUESTO', presupuesto);
   appendRows_('PROYECTOS', proyectos);
+  const perAnt = periodOf_(new Date(hoy.getFullYear(), hoy.getMonth() - 1, 1));
+  appendRows_('ANALISIS', [
+    { Periodo: perAnt, Indicador: 'otif', Nombre: 'OTIF proveedores', 'Análisis': 'Envases Colombia entregó 2 pedidos con faltantes por falta de material en su planta.',
+      'Plan de Acción': 'Reunión de seguimiento semanal y activar a Etiquetas Express como proveedor alterno.', Responsable: 'Compras ME',
+      'Fecha Compromiso': addDays_(hoy, 15), Autor: 'demo', Actualizado: new Date() },
+    { Periodo: perAnt, Indicador: 'pagos', Nombre: 'Cumplimiento de pagos', 'Análisis': 'Retraso de tesorería en la segunda quincena por cierre contable.',
+      'Plan de Acción': 'Programar pagos críticos con 5 días de anticipación.', Responsable: 'Tesorería', Autor: 'demo', Actualizado: new Date() },
+  ]);
 
   actualizarDashboard();
   ui.alert('Datos demo cargados ✅ Abre 🛒 Compras › Abrir dashboard.');
