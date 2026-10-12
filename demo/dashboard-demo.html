@@ -40,6 +40,7 @@ window.google = { script: { run: (function make(ok, fail) {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -48,10 +49,7 @@ window.google = { script: { run: (function make(ok, fail) {
     --bg:#f4f4f1; --card:#ffffff; --txt:#1f1f1f; --mut:#6b6b6b; --line:#ececec;
     --ok-bg:#e7f5e9; --warn-bg:#fff6d6; --bad-bg:#fde6e8; --nd-bg:#f0f0f0;
   }
-  /* Tipografía corporativa: Nourd (instalada en el equipo). Respaldo: Outfit, geometría similar. */
-  @font-face { font-family:'Nourd'; src:local('Nourd'), local('Nourd Regular'), local('Nourd-Regular'); font-weight:400; }
-  @font-face { font-family:'Nourd'; src:local('Nourd Medium'), local('Nourd-Medium'); font-weight:500 600; }
-  @font-face { font-family:'Nourd'; src:local('Nourd Bold'), local('Nourd-Bold'); font-weight:700 900; }
+  /* Tipografía corporativa Nourd: la carga el archivo Fuentes.html (si existe). Respaldo: Outfit. */
   :root { --font:'Nourd','Outfit','Segoe UI',Roboto,Arial,sans-serif; }
   * { box-sizing:border-box; }
   input, select, textarea, button, table { font-family:var(--font); }

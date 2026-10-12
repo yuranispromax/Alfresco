@@ -1,2 +1,8 @@
 .clasp.json
 node_modules/
+# Tipografía con licencia: no versionar
+Fuentes.html
+*.ttf
+*.otf
+*.woff
+*.woff2

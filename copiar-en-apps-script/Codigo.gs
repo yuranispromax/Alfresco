@@ -948,14 +948,23 @@ function enviarComunicadoNSMenu() {
 /** Dashboard web (diálogo en la hoja o Web App) y formularios de captura. */
 
 function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Dashboard')
+  return htmlDashboard_()
     .setTitle(APP.NAME)
     .addMetaTag('viewport', 'width=device-width, initial-scale=1');
 }
 
 function abrirDashboard() {
-  const html = HtmlService.createHtmlOutputFromFile('Dashboard').setWidth(1280).setHeight(820);
+  const html = htmlDashboard_().setWidth(1280).setHeight(820);
   SpreadsheetApp.getUi().showModalDialog(html, APP.NAME);
+}
+
+function htmlDashboard_() {
+  return HtmlService.createTemplateFromFile('Dashboard').evaluate();
+}
+
+/** Tipografía Nourd: archivo HTML opcional "Fuentes" con los @font-face (no se versiona: fuente con licencia). */
+function incluirFuentes_() {
+  try { return HtmlService.createHtmlOutputFromFile('Fuentes').getContent(); } catch (e) { return ''; }
 }
 
 /** Todo lo que pinta el dashboard en una sola llamada. */
