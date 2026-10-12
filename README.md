@@ -1,5 +1,7 @@
 # Gestión de Compras · Alfresco
 
+> 📘 **Manual de uso:** [`docs/Manual_Tablero_Gestion_Compras_Alfresco.docx`](docs/Manual_Tablero_Gestion_Compras_Alfresco.docx) · 📄 **Plantilla de carga:** [`plantillas/Plantilla_Carga_Compras_Alfresco.xlsx`](plantillas/Plantilla_Carga_Compras_Alfresco.xlsx) · 📋 **Código para copiar:** [`copiar-en-apps-script/`](copiar-en-apps-script/)
+
 Sistema de la **Dirección de Compras** montado sobre **Google Sheets + Apps Script + Drive + Gmail**, con costo cero. Mide los 7 indicadores, avisa por correo y deja trazabilidad de la comunicación con proveedores.
 
 | # | Iniciativa | Indicador | Fuente (hoja) | Cálculo |
@@ -58,6 +60,7 @@ Formularios web ─────┼─► Apps Script ─► Google Sheet (base d
 | `Indicadores.gs` | Cálculo de los 7 KPI, hoja Dashboard, histórico mensual |
 | `Operaciones.gs` | Reglas OTIF, pagos, ahorro y columnas calculadas |
 | `Alertas.gs` | Correo diario, notificación de rechazos, comunicado de Paro de Entregas / NS |
+| Análisis por indicador | Hoja `Analisis`: observación, plan de acción, responsable y fecha por indicador y periodo; visible en tarjeta, detalle, hoja Dashboard y correo diario |
 | `Importar.gs` | Carga de Excel/CSV: mapeo de columnas, conversión de tipos, archivo en Drive, historial |
 | `WebApp.gs` + `Dashboard.html` | Dashboard (Chart.js), adjuntar información (SheetJS), formularios |
 
