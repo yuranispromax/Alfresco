@@ -7,7 +7,8 @@
     "studio": "npm run assets:scan && remotion studio src/index.ts",
     "render": "npm run assets:scan && remotion render src/index.ts GranPremio out/video_final.mp4",
     "typecheck": "tsc",
-    "assets:scan": "node scripts/scan-assets.mjs"
+    "assets:scan": "node scripts/scan-assets.mjs",
+    "music": "python3 scripts/make-music.py"
   },
   "author": "",
   "license": "ISC",

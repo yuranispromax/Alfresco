@@ -17,6 +17,7 @@ Transiciones: wipe, slide, fade (`@remotion/transitions`). Subtítulos sincroniz
 ```bash
 npm install
 npm run clips:download   # descarga clips reales libres (Wikimedia Commons, sin API key) a public/clips/
+npm run music            # (opcional) regenera public/audio/musica.wav — música original por código
 npm run render           # -> out/video_final.mp4
 npm run studio           # vista previa interactiva
 ```
