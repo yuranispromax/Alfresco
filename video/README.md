@@ -22,7 +22,7 @@ npm run studio           # vista previa interactiva
 ```
 
 **Clips reales:** cualquier `.mp4/.webm/.mov` en `public/clips/` se detecta automáticamente
-(`scripts/scan-clips.mjs`) y se usa como fondo con zoom/pan vía `<OffthreadVideo>`.
+(`scripts/scan-assets.mjs`) y se usa como fondo con zoom/pan vía `<OffthreadVideo>`.
 Si la carpeta está vacía, se usa un fondo animado de pista como respaldo.
 Fuentes libres sugeridas para descargar a mano: mixkit.co, pixabay.com/videos, pexels.com/videos.
 

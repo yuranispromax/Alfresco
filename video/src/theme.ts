@@ -1,6 +1,9 @@
 import {continueRender, delayRender, staticFile} from 'remotion';
+import vwFonts from './fonts.json';
 
-// Montserrat (SIL Open Font License) bundled locally in public/fonts -> renders offline.
+// Brand font: Volkswagen Serial (same as the presentation). It is commercial, so it is not
+// bundled: drop its .ttf/.otf files in public/fonts/ (name must contain "volks") or have it
+// installed on the system. Montserrat (SIL OFL, bundled) is the fallback.
 const FACES = [
   {weight: '600', style: 'normal'},
   {weight: '800', style: 'normal'},
@@ -9,16 +12,18 @@ const FACES = [
 ];
 if (typeof document !== 'undefined') {
   const handle = delayRender('Loading Montserrat');
-  Promise.all(
-    FACES.map(async ({weight, style}) => {
-      const face = new FontFace('Montserrat', `url(${staticFile(`fonts/Montserrat-${weight}-${style}.ttf`)}) format('truetype')`, {weight, style});
-      document.fonts.add(await face.load());
-    }),
-  ).then(() => continueRender(handle)).catch((e) => { console.error(e); continueRender(handle); });
+  const load = async (family: string, file: string, weight: string, style: string) => {
+    const face = new FontFace(family, `url(${staticFile(file)})`, {weight, style});
+    document.fonts.add(await face.load());
+  };
+  Promise.all([
+    ...FACES.map(({weight, style}) => load('Montserrat', `fonts/Montserrat-${weight}-${style}.ttf`, weight, style)),
+    ...(vwFonts as {file: string; weight: string; style: string}[]).map((f) => load('Volkswagen Serial', f.file, f.weight, f.style)),
+  ]).then(() => continueRender(handle)).catch((e) => { console.error(e); continueRender(handle); });
 }
 
-export const fontFamily = 'Montserrat, Inter, sans-serif';
-export const bodyFont = 'Montserrat, Inter, sans-serif';
+export const fontFamily = "'Volkswagen Serial', Montserrat, Inter, sans-serif";
+export const bodyFont = "'Volkswagen Serial', Montserrat, Inter, sans-serif";
 
 export const C = {
   navy: '#0A2E4A',

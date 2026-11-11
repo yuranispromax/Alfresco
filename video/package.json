@@ -4,10 +4,10 @@
   "description": "",
   "scripts": {
     "clips:download": "node scripts/download-clips.mjs",
-    "clips:scan": "node scripts/scan-clips.mjs",
-    "studio": "npm run clips:scan && remotion studio src/index.ts",
-    "render": "npm run clips:scan && remotion render src/index.ts GranPremio out/video_final.mp4",
-    "typecheck": "tsc"
+    "studio": "npm run assets:scan && remotion studio src/index.ts",
+    "render": "npm run assets:scan && remotion render src/index.ts GranPremio out/video_final.mp4",
+    "typecheck": "tsc",
+    "assets:scan": "node scripts/scan-assets.mjs"
   },
   "author": "",
   "license": "ISC",
