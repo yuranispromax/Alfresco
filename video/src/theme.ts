@@ -22,8 +22,9 @@ if (typeof document !== 'undefined') {
   ]).then(() => continueRender(handle)).catch((e) => { console.error(e); continueRender(handle); });
 }
 
-export const fontFamily = "'Volkswagen Serial', Montserrat, Inter, sans-serif";
-export const bodyFont = "'Volkswagen Serial', Montserrat, Inter, sans-serif";
+// Fuente institucional en todo el video.
+export const fontFamily = "'Volkswagen Serial', Montserrat, sans-serif";
+export const bodyFont = "'Volkswagen Serial', Montserrat, sans-serif";
 
 export const C = {
   navy: '#0A2E4A',

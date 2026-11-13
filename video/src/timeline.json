@@ -1,0 +1,126 @@
+{
+  "fps": 30,
+  "transition": 15,
+  "total": 2030,
+  "lights": [
+    6,
+    22,
+    39,
+    55,
+    71
+  ],
+  "lightsOut": 106,
+  "cuts": [
+    228,
+    571,
+    869,
+    1255,
+    1599,
+    1812
+  ],
+  "scenes": [
+    {
+      "scene": "intro",
+      "start": 0,
+      "duration": 243,
+      "lines": [
+        {
+          "text": "¡Pilotos de MiRed IPS, enciendan motores!",
+          "file": "audio/voz/l1.mp3",
+          "frames": 98,
+          "from": 6
+        },
+        {
+          "text": "Celebramos el Día Mundial de la Calidad con el Gran Premio de la Calidad.",
+          "file": "audio/voz/l2.mp3",
+          "frames": 115,
+          "from": 112
+        }
+      ]
+    },
+    {
+      "scene": "objetivo",
+      "start": 228,
+      "duration": 358,
+      "lines": [
+        {
+          "text": "Para fortalecer la seguridad del paciente, la gestión de riesgos, la medición, el análisis de problemas, la mejora continua, la experiencia del usuario y el trabajo en equipo.",
+          "file": "audio/voz/l3.mp3",
+          "frames": 328,
+          "from": 14
+        }
+      ]
+    },
+    {
+      "scene": "evento1",
+      "start": 571,
+      "duration": 313,
+      "lines": [
+        {
+          "text": "Primera vuelta, lunes treinta de noviembre: recorrido por sedes. Paso Palmas, Paso Galán y Camino Ciudadela, de ocho y treinta a una de la tarde.",
+          "file": "audio/voz/l4.mp3",
+          "frames": 283,
+          "from": 14
+        }
+      ]
+    },
+    {
+      "scene": "evento2",
+      "start": 869,
+      "duration": 401,
+      "lines": [
+        {
+          "text": "Segunda vuelta, miércoles dos de diciembre: Pit Lane, experiencias exitosas. Auditorio Rómulo Rodado, CUD Adelita de Char, de ocho y treinta a una de la tarde.",
+          "file": "audio/voz/l5.mp3",
+          "frames": 371,
+          "from": 14
+        }
+      ]
+    },
+    {
+      "scene": "evento3",
+      "start": 1255,
+      "duration": 359,
+      "lines": [
+        {
+          "text": "Gran final, jueves tres de diciembre: ¡La Gran Carrera de la Calidad! Auditorio Rómulo Rodado y lobby del CUD Adelita de Char, de ocho de la mañana a cuatro y treinta de la tarde.",
+          "file": "audio/voz/l6.mp3",
+          "frames": 329,
+          "from": 14
+        }
+      ]
+    },
+    {
+      "scene": "frase",
+      "start": 1599,
+      "duration": 228,
+      "lines": [
+        {
+          "text": "Recuerda: la meta no es llegar primero.",
+          "file": "audio/voz/l7.mp3",
+          "frames": 75,
+          "from": 14
+        },
+        {
+          "text": "Es avanzar juntos, de forma segura y haciendo las cosas bien.",
+          "file": "audio/voz/l8.mp3",
+          "frames": 115,
+          "from": 97
+        }
+      ]
+    },
+    {
+      "scene": "cierre",
+      "start": 1812,
+      "duration": 218,
+      "lines": [
+        {
+          "text": "Gran Premio de la Calidad, MiRed IPS. ¡Te esperamos en la pista!",
+          "file": "audio/voz/l9.mp3",
+          "frames": 138,
+          "from": 14
+        }
+      ]
+    }
+  ]
+}

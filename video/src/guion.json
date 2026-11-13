@@ -1,0 +1,46 @@
+[
+  {
+    "scene": "intro",
+    "lines": [
+      "¡Pilotos de MiRed IPS, enciendan motores!",
+      "Celebramos el Día Mundial de la Calidad con el Gran Premio de la Calidad."
+    ]
+  },
+  {
+    "scene": "objetivo",
+    "lines": [
+      "Para fortalecer la seguridad del paciente, la gestión de riesgos, la medición, el análisis de problemas, la mejora continua, la experiencia del usuario y el trabajo en equipo."
+    ]
+  },
+  {
+    "scene": "evento1",
+    "lines": [
+      "Primera vuelta, lunes treinta de noviembre: recorrido por sedes. Paso Palmas, Paso Galán y Camino Ciudadela, de ocho y treinta a una de la tarde."
+    ]
+  },
+  {
+    "scene": "evento2",
+    "lines": [
+      "Segunda vuelta, miércoles dos de diciembre: Pit Lane, experiencias exitosas. Auditorio Rómulo Rodado, CUD Adelita de Char, de ocho y treinta a una de la tarde."
+    ]
+  },
+  {
+    "scene": "evento3",
+    "lines": [
+      "Gran final, jueves tres de diciembre: ¡La Gran Carrera de la Calidad! Auditorio Rómulo Rodado y lobby del CUD Adelita de Char, de ocho de la mañana a cuatro y treinta de la tarde."
+    ]
+  },
+  {
+    "scene": "frase",
+    "lines": [
+      "Recuerda: la meta no es llegar primero.",
+      "Es avanzar juntos, de forma segura y haciendo las cosas bien."
+    ]
+  },
+  {
+    "scene": "cierre",
+    "lines": [
+      "Gran Premio de la Calidad, MiRed IPS. ¡Te esperamos en la pista!"
+    ]
+  }
+]

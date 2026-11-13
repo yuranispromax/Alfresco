@@ -1,1 +1,27 @@
-[]
+[
+  {
+    "file": "fonts/VolkswagenSerial-Medium.otf",
+    "weight": "500",
+    "style": "normal"
+  },
+  {
+    "file": "fonts/VolkswagenSerial-MediumItalic.otf",
+    "weight": "500",
+    "style": "italic"
+  },
+  {
+    "file": "fonts/VolkswagenSerial-Regular.otf",
+    "weight": "400",
+    "style": "normal"
+  },
+  {
+    "file": "fonts/VolkswagenSerial-Xbold.otf",
+    "weight": "800",
+    "style": "normal"
+  },
+  {
+    "file": "fonts/VolkswagenSerial-XboldItalic.otf",
+    "weight": "800",
+    "style": "italic"
+  }
+]

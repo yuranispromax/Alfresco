@@ -7,13 +7,15 @@
     "studio": "npm run assets:scan && remotion studio src/index.ts",
     "render": "npm run assets:scan && remotion render src/index.ts GranPremio out/video_final.mp4",
     "typecheck": "tsc",
-    "assets:scan": "node scripts/scan-assets.mjs",
-    "music": "python3 scripts/make-music.py"
+    "assets:scan": "node scripts/scan-assets.mjs && node scripts/build-timeline.mjs",
+    "music": "python3 scripts/make-music.py",
+    "voice": "node scripts/make-voice.mjs && node scripts/build-timeline.mjs"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@remotion/cli": "4.0.542",
+    "@remotion/paths": "4.0.542",
     "@remotion/transitions": "4.0.542",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

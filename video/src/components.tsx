@@ -75,7 +75,7 @@ export const KineticTitle: React.FC<{text: string; delay?: number; size?: number
         const s = spring({frame: frame - delay - i * stagger, fps, config: {damping: 13, stiffness: 160}});
         return (
           <span key={i} style={{
-            fontFamily, fontWeight: 900, fontStyle: 'italic', fontSize: size, lineHeight: 1.02,
+            fontFamily, fontWeight: 800, fontStyle: 'italic', fontSize: size, lineHeight: 1.02,
             color: highlight.includes(w) ? C.yellow : color, textTransform: 'uppercase',
             transform: `translateY(${(1 - s) * 80}px) skewX(-6deg) scale(${0.6 + 0.4 * s})`,
             opacity: s, textShadow: '0 8px 30px rgba(0,0,0,0.55)', display: 'inline-block',
