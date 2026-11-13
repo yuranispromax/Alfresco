@@ -1,7 +1,7 @@
 {
   "fps": 30,
   "transition": 15,
-  "total": 2030,
+  "total": 2281,
   "lights": [
     6,
     22,
@@ -16,7 +16,8 @@
     869,
     1255,
     1599,
-    1812
+    1876,
+    2063
   ],
   "scenes": [
     {
@@ -91,32 +92,51 @@
       ]
     },
     {
-      "scene": "frase",
+      "scene": "phva",
       "start": 1599,
-      "duration": 228,
+      "duration": 292,
       "lines": [
         {
-          "text": "Recuerda: la meta no es llegar primero.",
+          "text": "Y recuerda: los errores son parte del proceso.",
           "file": "audio/voz/l7.mp3",
-          "frames": 75,
+          "frames": 86,
+          "from": 14
+        },
+        {
+          "text": "Por eso cumplimos el ciclo: planear, hacer, verificar o estudiar, y actuar.",
+          "file": "audio/voz/l8.mp3",
+          "frames": 168,
+          "from": 108
+        }
+      ]
+    },
+    {
+      "scene": "frase",
+      "start": 1876,
+      "duration": 202,
+      "lines": [
+        {
+          "text": "La meta no es llegar primero.",
+          "file": "audio/voz/l9.mp3",
+          "frames": 49,
           "from": 14
         },
         {
           "text": "Es avanzar juntos, de forma segura y haciendo las cosas bien.",
-          "file": "audio/voz/l8.mp3",
+          "file": "audio/voz/l10.mp3",
           "frames": 115,
-          "from": 97
+          "from": 71
         }
       ]
     },
     {
       "scene": "cierre",
-      "start": 1812,
+      "start": 2063,
       "duration": 218,
       "lines": [
         {
           "text": "Gran Premio de la Calidad, MiRed IPS. ¡Te esperamos en la pista!",
-          "file": "audio/voz/l9.mp3",
+          "file": "audio/voz/l11.mp3",
           "frames": 138,
           "from": 14
         }

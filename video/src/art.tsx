@@ -1,6 +1,6 @@
 // Ilustraciones originales dibujadas en código (SVG): carro F1, pista, trofeo, medalla.
 import React from 'react';
-import {useCurrentFrame} from 'remotion';
+import {Img, staticFile, useCurrentFrame} from 'remotion';
 import {getLength, getPointAtLength, getTangentAtLength} from '@remotion/paths';
 import {C} from './theme';
 
@@ -207,5 +207,38 @@ export const Mascot: React.FC<{height?: number; shirt?: string; text?: string}> 
         </g>
       </g>
     </svg>
+  );
+};
+
+/** Piloto Calidoso en su carro F1 (personaje institucional), animado por capas:
+ *  carro con motor encendido (vibración + rebote), cabeza que se mueve, pulgar que saluda y humo de llantas. */
+const W0 = 990, H0 = 622;
+export const PilotCar: React.FC<{width?: number; rev?: number; smoke?: boolean; wave?: boolean}> = ({width = 700, rev = 1, smoke = true, wave = true}) => {
+  const frame = useCurrentFrame();
+  const dx = Math.sin(frame * 2.1) * 1.4 * rev;
+  const dy = Math.sin(frame * 3.3) * 1.2 * rev - Math.abs(Math.sin(frame / 6)) * 5 * rev;
+  const roll = Math.sin(frame / 11) * 1.2;
+  const head = Math.sin(frame / 9) * 5;
+  const arm = wave ? Math.sin(frame / 5) * 12 : 0;
+  const layer = (src: string, rot = 0, ox = 0, oy = 0): React.ReactNode => (
+    <Img src={staticFile(src)} style={{position: 'absolute', inset: 0, width: '100%', transform: `rotate(${rot}deg)`, transformOrigin: `${(ox / W0) * 100}% ${(oy / H0) * 100}%`}} />
+  );
+  const puffs = smoke ? Array.from({length: 10}, (_, i) => {
+    const life = (frame + i * 7) % 70;
+    const side = i % 2 ? 1 : -1;
+    const x = side > 0 ? 0.93 : 0.07;
+    const sz = 40 + life * 4;
+    return <div key={i} style={{position: 'absolute', left: `calc(${x * 100}% + ${side * life * 3}px - ${sz / 2}px)`, top: `calc(48% - ${life * 1.6}px - ${sz / 2}px)`, width: sz, height: sz, borderRadius: '50%', background: 'rgba(235,240,245,0.9)', opacity: 0.55 * (1 - life / 70), filter: 'blur(10px)'}} />;
+  }) : null;
+  return (
+    <div style={{position: 'relative', width, height: (width * H0) / W0, transform: `translate(${dx}px, ${dy}px) rotate(${roll}deg)`}}>
+      {puffs}
+      <div style={{position: 'absolute', left: '6%', right: '6%', bottom: -12, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.45)', filter: 'blur(12px)'}} />
+      <div style={{position: 'absolute', inset: 0, filter: 'drop-shadow(0 18px 22px rgba(0,0,0,0.35))'}}>
+        {layer('img/piloto-base.png')}
+        {layer('img/piloto-brazo.png', arm, 395, 235)}
+        {layer('img/piloto-cabeza.png', head, 465, 195)}
+      </div>
+    </div>
   );
 };

@@ -31,9 +31,16 @@
     ]
   },
   {
+    "scene": "phva",
+    "lines": [
+      "Y recuerda: los errores son parte del proceso.",
+      "Por eso cumplimos el ciclo: planear, hacer, verificar o estudiar, y actuar."
+    ]
+  },
+  {
     "scene": "frase",
     "lines": [
-      "Recuerda: la meta no es llegar primero.",
+      "La meta no es llegar primero.",
       "Es avanzar juntos, de forma segura y haciendo las cosas bien."
     ]
   },

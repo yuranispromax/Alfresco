@@ -2,7 +2,7 @@
 // Each line -> public/audio/voz/lN.mp3 (sped up + EQ/compression); durations -> src/voz.json.
 // Usage: node scripts/make-voice.mjs   (needs curl + network)
 import {execFileSync} from 'node:child_process';
-import {mkdirSync, readFileSync, writeFileSync, rmSync} from 'node:fs';
+import {existsSync, mkdirSync, readFileSync, writeFileSync, rmSync} from 'node:fs';
 
 const FPS = 30;
 const LANG = 'es-419';
@@ -45,6 +45,16 @@ for (const block of guion) {
   const lines = [];
   for (const text of block.lines) {
     n++;
+    // Voz propia: si existe public/audio/voz-propia/lN.(mp3|wav|m4a|ogg) se usa en lugar de la voz automática.
+    const own = ['mp3', 'wav', 'm4a', 'ogg'].map((e) => `public/audio/voz-propia/l${n}.${e}`).find((f) => existsSync(f));
+    if (own) {
+      const file = `audio/voz/l${n}.mp3`;
+      ffmpeg(['-i', own, '-af', FILTER.replace(`atempo=${TEMPO},`, ''), '-ar', '48000', '-ac', '2', '-b:a', '192k', `public/${file}`]);
+      const sec = duration(`public/${file}`);
+      lines.push({text, file, frames: Math.ceil(sec * FPS)});
+      console.log(`${file}  ${sec.toFixed(2)} s  [voz propia] ${text}`);
+      continue;
+    }
     let say = text;
     for (const [re, rep] of SAY) say = say.replace(re, rep);
     const parts = chunks(say).map((c, i) => {

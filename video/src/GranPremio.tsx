@@ -4,11 +4,11 @@ import {TransitionSeries, linearTiming, springTiming} from '@remotion/transition
 import {fade} from '@remotion/transitions/fade';
 import {slide} from '@remotion/transitions/slide';
 import {wipe} from '@remotion/transitions/wipe';
-import {STOPS, SceneCierre, SceneEvento, SceneFrase, SceneIntro, SceneObjetivo} from './scenes';
+import {STOPS, SceneCierre, SceneEvento, ScenePHVA, SceneFrase, SceneIntro, SceneObjetivo} from './scenes';
 import {Captions} from './Captions';
 import {TL, scene} from './timeline';
 import {C} from './theme';
-import {F1Car, Medal, Track, Trophy} from './art';
+import {Medal, PilotCar, Track, Trophy} from './art';
 
 export const TOTAL_FRAMES = TL.total;
 const T = TL.transition;
@@ -30,13 +30,15 @@ export const GranPremio: React.FC = () => (
       <TransitionSeries.Transition presentation={slide({direction: 'from-right'})} timing={springTiming({durationInFrames: T, config: {damping: 200}})} />
       <TransitionSeries.Sequence durationInFrames={d('evento2')}>
         <SceneEvento id="evento2" lap="Vuelta 2 · Pit Lane" weekday="MIÉRCOLES" day="2" month="DIC" title="Pit Lane: experiencias exitosas"
-          place={['Auditorio Rómulo Rodado', 'Sede CUD Adelita de Char']} time="8:30 a. m. – 1:00 p. m." color={C.yellow} art={() => <F1Car width={560} number="2" color={C.blue} />} clip={3} />
+          place={['Auditorio Rómulo Rodado', 'Sede CUD Adelita de Char']} time="8:30 a. m. – 1:00 p. m." color={C.yellow} art={() => <PilotCar width={560} />} clip={3} />
       </TransitionSeries.Sequence>
       <TransitionSeries.Transition presentation={slide({direction: 'from-right'})} timing={springTiming({durationInFrames: T, config: {damping: 200}})} />
       <TransitionSeries.Sequence durationInFrames={d('evento3')}>
         <SceneEvento id="evento3" lap="Gran final" weekday="JUEVES" day="3" month="DIC" title="La Gran Carrera de la Calidad"
           place={['Auditorio Rómulo Rodado y Lobby', 'CUD Adelita de Char']} time="8:00 a. m. – 4:30 p. m." color={C.red} art={() => <div style={{display: 'flex', alignItems: 'flex-end'}}><Trophy width={330} /><div style={{marginLeft: -40}}><Medal width={210} /></div></div>} clip={4} />
       </TransitionSeries.Sequence>
+      <TransitionSeries.Transition presentation={wipe({direction: 'from-left'})} timing={linearTiming({durationInFrames: T})} />
+      <TransitionSeries.Sequence durationInFrames={d('phva')}><ScenePHVA /></TransitionSeries.Sequence>
       <TransitionSeries.Transition presentation={fade()} timing={linearTiming({durationInFrames: T})} />
       <TransitionSeries.Sequence durationInFrames={d('frase')}><SceneFrase /></TransitionSeries.Sequence>
       <TransitionSeries.Transition presentation={wipe({direction: 'from-top-right'})} timing={linearTiming({durationInFrames: T})} />

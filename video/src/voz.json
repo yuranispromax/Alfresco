@@ -55,16 +55,31 @@
     ]
   },
   {
+    "scene": "phva",
+    "lines": [
+      {
+        "text": "Y recuerda: los errores son parte del proceso.",
+        "file": "audio/voz/l7.mp3",
+        "frames": 86
+      },
+      {
+        "text": "Por eso cumplimos el ciclo: planear, hacer, verificar o estudiar, y actuar.",
+        "file": "audio/voz/l8.mp3",
+        "frames": 168
+      }
+    ]
+  },
+  {
     "scene": "frase",
     "lines": [
       {
-        "text": "Recuerda: la meta no es llegar primero.",
-        "file": "audio/voz/l7.mp3",
-        "frames": 75
+        "text": "La meta no es llegar primero.",
+        "file": "audio/voz/l9.mp3",
+        "frames": 49
       },
       {
         "text": "Es avanzar juntos, de forma segura y haciendo las cosas bien.",
-        "file": "audio/voz/l8.mp3",
+        "file": "audio/voz/l10.mp3",
         "frames": 115
       }
     ]
@@ -74,7 +89,7 @@
     "lines": [
       {
         "text": "Gran Premio de la Calidad, MiRed IPS. ¡Te esperamos en la pista!",
-        "file": "audio/voz/l9.mp3",
+        "file": "audio/voz/l11.mp3",
         "frames": 138
       }
     ]

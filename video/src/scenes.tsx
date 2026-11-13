@@ -3,7 +3,7 @@ import {AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig, Easi
 import {C, bodyFont, fontFamily} from './theme';
 import {Checker, ClipBg, KineticTitle, Logo, Tag} from './components';
 import {TL, scene} from './timeline';
-import {F1Car, Mascot} from './art';
+import {PilotCar} from './art';
 import {Img, staticFile} from 'remotion';
 
 const clamp = {extrapolateLeft: 'clamp', extrapolateRight: 'clamp'} as const;
@@ -28,7 +28,7 @@ export const SceneIntro: React.FC = () => {
           })}
         </div>
         {!out && <KineticTitle text="¡Enciendan motores!" size={110} highlight={['motores!']} delay={8} />}
-        {!out && <div style={{transform: `translateY(${interpolate(frame, [0, 18], [600, 0], clamp)}px)`}}><Mascot height={760} /></div>}
+        {!out && <div style={{marginTop: 120, transform: `translateY(${interpolate(frame, [0, 18], [600, 0], clamp)}px)`}}><PilotCar width={860} rev={2.2} /></div>}
         {out && (
           <>
             <Tag bg={C.teal}>Día Mundial de la Calidad</Tag>
@@ -37,11 +37,14 @@ export const SceneIntro: React.FC = () => {
           </>
         )}
       </AbsoluteFill>
-      {out && (
-        <div style={{position: 'absolute', bottom: 330, left: interpolate(frame, [TL.lightsOut, TL.lightsOut + 70], [-700, 1200], {...clamp, easing: Easing.in(Easing.quad)})}}>
-          <F1Car width={640} speed={40} />
-        </div>
-      )}
+      {out && (() => {
+        const k = interpolate(frame, [TL.lightsOut, TL.lightsOut + 40], [0.35, 1], {...clamp, easing: Easing.out(Easing.cubic)});
+        return (
+          <div style={{position: 'absolute', bottom: 250, left: '50%', transform: `translateX(-50%) scale(${k})`, transformOrigin: '50% 100%', opacity: Math.min(1, k * 3)}}>
+            <PilotCar width={760} rev={1.4} />
+          </div>
+        );
+      })()}
       <AbsoluteFill style={{justifyContent: 'flex-end'}}><Checker size={36} speed={-8} /></AbsoluteFill>
     </AbsoluteFill>
   );
@@ -193,19 +196,54 @@ export const SceneCierre: React.FC = () => {
           })}
         </div>
         <div style={{display: 'flex', alignItems: 'center', gap: 30, transform: `scale(${logo})`, marginTop: 10}}>
-          <Mascot height={460} />
+          <PilotCar width={480} smoke={false} />
           <div style={{display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center'}}>
             <Logo width={400} />
             <div style={{background: '#fff', borderRadius: 20, padding: '12px 22px'}}><Img src={staticFile('img/supersalud.png')} style={{width: 300, display: 'block'}} /></div>
           </div>
         </div>
       </AbsoluteFill>
-      <div style={{position: 'absolute', top: 330, left: interpolate(frame, [0, 60], [-700, 1250], {...clamp, easing: Easing.inOut(Easing.quad)})}}>
-        <F1Car width={520} speed={40} />
-      </div>
       <div style={{position: 'absolute', bottom: 70, width: '100%', textAlign: 'center', fontFamily, fontWeight: 800, fontStyle: 'italic', fontSize: 34, letterSpacing: 6, color: C.yellow, opacity: logo}}>
         GESTIÓN DE LA CALIDAD
       </div>
+    </AbsoluteFill>
+  );
+};
+
+const CICLO = [['P', 'Planear', C.blue], ['H', 'Hacer', C.green], ['V', 'Verificar · Estudiar', C.yellow], ['A', 'Actuar', C.red]] as const;
+
+/** 6 · Los errores son parte del proceso: ciclo PHVA con el piloto. */
+export const ScenePHVA: React.FC = () => {
+  const frame = useCurrentFrame();
+  const [a, b] = scene('phva').lines;
+  const step = (b.frames * 0.85) / CICLO.length;
+  const car = useSpring(4, 14);
+  return (
+    <AbsoluteFill>
+      <ClipBg index={5} zoom={[1.1, 1.25]} pan={[10, -10]} />
+      <AbsoluteFill style={{alignItems: 'center', paddingTop: 140}}>
+        <Tag bg={C.green}>Ciclo PHVA</Tag>
+        <div style={{marginTop: 30}}><KineticTitle text="Los errores son parte del proceso" size={92} delay={a.from} stagger={3} highlight={['errores', 'proceso']} /></div>
+        <div style={{position: 'relative', width: 960, height: 960, marginTop: 10}}>
+          <svg viewBox="0 0 960 960" width={960} height={960} style={{position: 'absolute', inset: 0, transform: `rotate(${frame * 0.6}deg)`}}>
+            <circle cx="480" cy="480" r="400" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="10" strokeDasharray="40 26" />
+          </svg>
+          {CICLO.map(([letter, label, color], i) => {
+            const on = spring({frame: frame - (b.from + i * step), fps: 30, config: {damping: 12}});
+            const ang = (-90 + i * 90) * (Math.PI / 180);
+            const x = 480 + Math.cos(ang) * 400, y = 480 + Math.sin(ang) * 400;
+            return (
+              <div key={letter} style={{position: 'absolute', left: x, top: y, transform: `translate(-50%, -50%) scale(${on})`, display: 'flex', flexDirection: 'column', alignItems: 'center'}}>
+                <div style={{width: 150, height: 150, borderRadius: '50%', background: color, border: '8px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily, fontWeight: 800, fontStyle: 'italic', fontSize: 92, color: color === C.yellow ? C.navy : '#fff', boxShadow: '0 14px 30px rgba(0,0,0,0.4)'}}>{letter}</div>
+                <div style={{marginTop: 8, background: '#fff', color: C.navy, borderRadius: 999, padding: '6px 20px', fontFamily: bodyFont, fontWeight: 800, fontSize: 34, whiteSpace: 'nowrap'}}>{label}</div>
+              </div>
+            );
+          })}
+          <div style={{position: 'absolute', left: '50%', top: '52%', transform: `translate(-50%, -50%) scale(${0.4 + 0.6 * car})`}}>
+            <PilotCar width={560} />
+          </div>
+        </div>
+      </AbsoluteFill>
     </AbsoluteFill>
   );
 };
