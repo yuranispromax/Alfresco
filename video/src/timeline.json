@@ -1,7 +1,7 @@
 {
   "fps": 30,
   "transition": 15,
-  "total": 2281,
+  "total": 2310,
   "lights": [
     6,
     22,
@@ -16,8 +16,8 @@
     869,
     1255,
     1599,
-    1876,
-    2063
+    1905,
+    2092
   ],
   "scenes": [
     {
@@ -94,25 +94,25 @@
     {
       "scene": "phva",
       "start": 1599,
-      "duration": 292,
+      "duration": 321,
       "lines": [
         {
-          "text": "Y recuerda: los errores son parte del proceso.",
+          "text": "Y recuerda: las oportunidades de mejora son parte del proceso.",
           "file": "audio/voz/l7.mp3",
-          "frames": 86,
+          "frames": 115,
           "from": 14
         },
         {
           "text": "Por eso cumplimos el ciclo: planear, hacer, verificar o estudiar, y actuar.",
           "file": "audio/voz/l8.mp3",
           "frames": 168,
-          "from": 108
+          "from": 137
         }
       ]
     },
     {
       "scene": "frase",
-      "start": 1876,
+      "start": 1905,
       "duration": 202,
       "lines": [
         {
@@ -131,7 +131,7 @@
     },
     {
       "scene": "cierre",
-      "start": 2063,
+      "start": 2092,
       "duration": 218,
       "lines": [
         {

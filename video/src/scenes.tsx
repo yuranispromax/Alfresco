@@ -223,7 +223,7 @@ export const ScenePHVA: React.FC = () => {
       <ClipBg index={5} zoom={[1.1, 1.25]} pan={[10, -10]} />
       <AbsoluteFill style={{alignItems: 'center', paddingTop: 140}}>
         <Tag bg={C.green}>Ciclo PHVA</Tag>
-        <div style={{marginTop: 30}}><KineticTitle text="Los errores son parte del proceso" size={92} delay={a.from} stagger={3} highlight={['errores', 'proceso']} /></div>
+        <div style={{marginTop: 30}}><KineticTitle text="Las oportunidades de mejora son parte del proceso" size={84} delay={a.from} stagger={3} highlight={['mejora', 'proceso']} /></div>
         <div style={{position: 'relative', width: 960, height: 960, marginTop: 10}}>
           <svg viewBox="0 0 960 960" width={960} height={960} style={{position: 'absolute', inset: 0, transform: `rotate(${frame * 0.6}deg)`}}>
             <circle cx="480" cy="480" r="400" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="10" strokeDasharray="40 26" />
