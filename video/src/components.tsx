@@ -101,7 +101,5 @@ export const Tag: React.FC<{children: React.ReactNode; bg?: string; delay?: numb
 };
 
 export const Logo: React.FC<{width?: number}> = ({width = 420}) => (
-  <div style={{background: C.white, borderRadius: 28, padding: '22px 36px', boxShadow: '0 12px 40px rgba(0,0,0,0.35)'}}>
-    <Img src={staticFile('img/logo.png')} style={{width, display: 'block'}} />
-  </div>
+  <Img src={staticFile('img/logo-blanco.png')} style={{width, display: 'block', filter: 'drop-shadow(0 6px 14px rgba(0,0,0,0.35))'}} />
 );

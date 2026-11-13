@@ -199,7 +199,7 @@ export const SceneCierre: React.FC = () => {
           <PilotCar width={480} smoke={false} />
           <div style={{display: 'flex', flexDirection: 'column', gap: 24, alignItems: 'center'}}>
             <Logo width={400} />
-            <div style={{background: '#fff', borderRadius: 20, padding: '12px 22px'}}><Img src={staticFile('img/supersalud.png')} style={{width: 300, display: 'block'}} /></div>
+            <Img src={staticFile('img/supersalud-blanco.png')} style={{width: 280, display: 'block', opacity: 0.95}} />
           </div>
         </div>
       </AbsoluteFill>
