@@ -49,7 +49,7 @@ for (const block of guion) {
     const own = ['mp3', 'wav', 'm4a', 'ogg'].map((e) => `public/audio/voz-propia/l${n}.${e}`).find((f) => existsSync(f));
     if (own) {
       const file = `audio/voz/l${n}.mp3`;
-      ffmpeg(['-i', own, '-af', FILTER.replace(`atempo=${TEMPO},`, ''), '-ar', '48000', '-ac', '2', '-b:a', '192k', `public/${file}`]);
+      ffmpeg(['-i', own, '-af', FILTER.replace(`atempo=${TEMPO},`, '').replace(/silenceremove=stop_periods[^,]*,/, ''), '-ar', '48000', '-ac', '2', '-b:a', '192k', `public/${file}`]);
       const sec = duration(`public/${file}`);
       lines.push({text, file, frames: Math.ceil(sec * FPS)});
       console.log(`${file}  ${sec.toFixed(2)} s  [voz propia] ${text}`);

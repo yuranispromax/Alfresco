@@ -91,11 +91,11 @@ export const STOPS = [0.2, 0.55, 0.85];
 
 type EventProps = {
   id: string; lap: string; weekday: string; day: string; month: string; title: string;
-  place: string[]; time: string; color: string; art: (progress: number) => React.ReactNode; stops?: string[]; clip: number;
+  place: string[]; time: string; color: string; art: (progress: number) => React.ReactNode; stops?: string[]; clip: number; wide?: boolean;
 };
 
 /** 3-5 · One event of the week ("vuelta"). */
-export const SceneEvento: React.FC<EventProps> = ({id, lap, weekday, day, month, title, place, time, color, art, stops, clip}) => {
+export const SceneEvento: React.FC<EventProps> = ({id, lap, weekday, day, month, title, place, time, color, art, stops, clip, wide}) => {
   const frame = useCurrentFrame();
   const {durationInFrames} = useVideoConfig();
   const line = scene(id).lines[0];
@@ -108,7 +108,19 @@ export const SceneEvento: React.FC<EventProps> = ({id, lap, weekday, day, month,
       <ClipBg index={clip} zoom={[1.08, 1.25]} pan={[-20, 20]} />
       <AbsoluteFill style={{alignItems: 'center', paddingTop: 130}}>
         <Tag bg={color}><span style={{color: color === C.yellow ? C.navy : C.white}}>{lap}</span></Tag>
-        <div style={{display: 'flex', alignItems: 'center', gap: 36, marginTop: 40, transform: `scale(${date})`}}>
+        {wide && (
+          <div style={{position: 'relative', marginTop: 30}}>
+            <div style={{transform: `scale(${0.94 + 0.06 * date})`}}>{art(progress)}</div>
+            <div style={{position: 'absolute', right: -10, top: -30, transform: `scale(${0.62 * date})`, transformOrigin: '100% 0'}}>
+              <div style={{background: C.white, borderRadius: 34, width: 300, overflow: 'hidden', textAlign: 'center', boxShadow: '0 24px 60px rgba(0,0,0,0.45)'}}>
+                <div style={{background: color, color: C.white, fontFamily: bodyFont, fontWeight: 800, fontSize: 40, padding: '12px 0', letterSpacing: 4}}>{month}</div>
+                <div style={{fontFamily, fontWeight: 800, fontStyle: 'italic', fontSize: 190, lineHeight: 1.05, color: C.navy}}>{day}</div>
+                <div style={{fontFamily: bodyFont, fontWeight: 800, fontSize: 34, color: C.navy, paddingBottom: 16, letterSpacing: 3}}>{weekday}</div>
+              </div>
+            </div>
+          </div>
+        )}
+        {!wide && <div style={{display: 'flex', alignItems: 'center', gap: 36, marginTop: 40, transform: `scale(${date})`}}>
           <div style={{background: C.white, borderRadius: 34, width: 300, overflow: 'hidden', textAlign: 'center', boxShadow: '0 24px 60px rgba(0,0,0,0.45)'}}>
             <div style={{background: color, color: color === C.yellow ? C.navy : C.white, fontFamily: bodyFont, fontWeight: 800, fontSize: 40, padding: '12px 0', letterSpacing: 4}}>{month}</div>
             <div style={{fontFamily, fontWeight: 800, fontStyle: 'italic', fontSize: 190, lineHeight: 1.05, color: C.navy}}>{day}</div>
@@ -117,7 +129,7 @@ export const SceneEvento: React.FC<EventProps> = ({id, lap, weekday, day, month,
           <div style={{width: 560, height: 440, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `scale(${1.05 - 0.05 * t})`}}>
             {art(progress)}
           </div>
-        </div>
+        </div>}
         <div style={{marginTop: 50}}><KineticTitle text={title} size={96} delay={12} stagger={3} highlight={['Calidad', 'Pit', 'Lane', 'sedes']} /></div>
         <div style={{
           marginTop: 40, width: 900, background: 'rgba(255,255,255,0.96)', borderRadius: 30, padding: '30px 40px',

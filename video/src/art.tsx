@@ -68,9 +68,12 @@ export const F1Car: React.FC<{width?: number; number?: string; speed?: number; c
   );
 };
 
-/** Pista de carreras que se dibuja; el carro recorre y enciende los puntos de control. */
-const TRACK = 'M160 560 L160 300 Q160 170 290 170 L420 170 Q520 170 540 260 Q560 340 650 330 L760 320 Q880 310 880 430 L880 560 Q880 680 760 680 L300 680 Q160 680 160 560 Z';
-export const Track: React.FC<{progress: number; stops?: number[]; color?: string; width?: number}> = ({progress, stops = [], color = C.teal, width = 900}) => {
+/** Circuito en vista superior: césped rayado, grava, pianos, asfalto, tribuna, árboles,
+ *  línea de meta y el carro MiRed (vista superior) recorriendo la pista. */
+const TRACK = 'M200 520 L700 520 C820 520 880 480 880 400 L880 360 C880 300 830 270 780 280 L640 310 C590 320 560 290 570 240 L600 160 C620 100 600 80 540 80 L220 80 C140 80 110 120 110 190 L110 430 C110 490 140 520 200 520 Z';
+const TREES = [[40, 60], [70, 300], [40, 560], [960, 80], [930, 200], [700, 180], [760, 140], [960, 560], [400, 200], [450, 400], [300, 420], [650, 40], [380, 40], [960, 420]];
+export const Track: React.FC<{progress: number; stops?: number[]; color?: string; width?: number; labels?: string[]}> = ({progress, stops = [], color = C.teal, width = 1000, labels = []}) => {
+  const frame = useCurrentFrame();
   const len = getLength(TRACK);
   const p = Math.max(0, Math.min(1, progress));
   const at = (t: number) => getPointAtLength(TRACK, len * t) ?? {x: 0, y: 0};
@@ -78,32 +81,61 @@ export const Track: React.FC<{progress: number; stops?: number[]; color?: string
   const tan = getTangentAtLength(TRACK, len * p) ?? {x: 1, y: 0};
   const ang = (Math.atan2(tan.y, tan.x) * 180) / Math.PI;
   return (
-    <svg viewBox="100 110 840 640" width={width}>
-      <rect x="100" y="110" width="840" height="640" rx="40" fill="#2d8a4e" />
-      <path d={TRACK} fill="none" stroke="#fff" strokeWidth="78" strokeDasharray="22 22" />
-      <path d={TRACK} fill="none" stroke={C.red} strokeWidth="78" strokeDasharray="22 22" strokeDashoffset="22" opacity="0.9" />
-      <path d={TRACK} fill="none" stroke="#3b4248" strokeWidth="64" />
-      <path d={TRACK} fill="none" stroke="#fff" strokeWidth="3" strokeDasharray="26 26" opacity="0.6" />
-      <path d={TRACK} fill="none" stroke={color} strokeWidth="12" strokeLinecap="round" strokeDasharray={`${len * p} ${len}`} />
-      {/* línea de salida */}
-      <g transform="translate(128 430)">
-        {Array.from({length: 16}, (_, i) => <rect key={i} x={(i % 8) * 8} y={Math.floor(i / 8) * 8} width="8" height="8" fill={(i + Math.floor(i / 8)) % 2 ? '#111' : '#fff'} />)}
-      </g>
-      {stops.map((s, i) => {
-        const pt = at(s);
-        const on = p >= s;
+    <svg viewBox="0 0 1000 620" width={width} style={{borderRadius: 36, boxShadow: '0 30px 70px rgba(0,0,0,0.5)'}}>
+      <defs>
+        <pattern id="grass" width="80" height="80" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+          <rect width="80" height="80" fill="#3f9b4f" /><rect width="40" height="80" fill="#48a85a" />
+        </pattern>
+        <pattern id="checker" width="16" height="16" patternUnits="userSpaceOnUse">
+          <rect width="16" height="16" fill="#fff" /><rect width="8" height="8" fill="#111" /><rect x="8" y="8" width="8" height="8" fill="#111" />
+        </pattern>
+        <linearGradient id="asphalt" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stopColor="#3a4046" /><stop offset="1" stopColor="#2a2f34" /></linearGradient>
+        <filter id="carShadow" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="6" stdDeviation="5" floodOpacity="0.5" /></filter>
+      </defs>
+      <rect width="1000" height="620" fill="url(#grass)" />
+      {/* tribuna */}
+      <rect x="260" y="572" width="400" height="38" rx="6" fill="#d9dee3" />
+      {Array.from({length: 20}, (_, i) => <rect key={i} x={266 + i * 19.5} y="578" width="15" height="26" rx="3" fill={[C.blue, C.red, C.yellow, C.teal][i % 4]} />)}
+      {/* árboles */}
+      {TREES.map(([x, y], i) => (
+        <g key={i}><circle cx={x + 4} cy={y + 6} r="26" fill="rgba(0,0,0,0.18)" /><circle cx={x} cy={y} r="26" fill="#2e7d3c" /><circle cx={x - 7} cy={y - 7} r="12" fill="#3f9a4e" /></g>
+      ))}
+      {/* logo pintado en el césped interior */}
+      <image href={staticFile('img/logo-blanco.png')} x="200" y="255" width="270" opacity="0.55" />
+      {/* capas del circuito */}
+      <path d={TRACK} fill="none" stroke="#d8cfb6" strokeWidth="150" strokeLinejoin="round" />
+      <path d={TRACK} fill="none" stroke="#fff" strokeWidth="104" strokeDasharray="24 24" strokeLinejoin="round" />
+      <path d={TRACK} fill="none" stroke={C.red} strokeWidth="104" strokeDasharray="24 24" strokeDashoffset="24" strokeLinejoin="round" />
+      <path d={TRACK} fill="none" stroke="#f4f4f4" strokeWidth="90" strokeLinejoin="round" />
+      <path d={TRACK} fill="none" stroke="url(#asphalt)" strokeWidth="82" strokeLinejoin="round" />
+      <path d={TRACK} fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="30" strokeLinejoin="round" />
+      {/* estela de progreso */}
+      <path d={TRACK} fill="none" stroke={color} strokeWidth="8" strokeLinecap="round" opacity="0.85" strokeDasharray={`${len * p} ${len}`} />
+      {/* meta */}
+      <rect x="196" y="479" width="24" height="82" fill="url(#checker)" />
+      {[0, 1, 2].map((i) => <rect key={i} x={240 + i * 46} y={i % 2 ? 496 : 532} width="30" height="4" fill="#fff" />)}
+      {/* puntos de control (sedes) */}
+      {stops.map((st, i) => {
+        const pt = at(st);
+        const on = p >= st;
+        const pulse = on ? 1 + Math.sin((frame - i * 10) / 4) * 0.08 : 1;
+        const lx = pt.x > 700 ? -1 : 1;
         return (
-          <g key={i} transform={`translate(${pt.x} ${pt.y})`}>
-            <circle r={on ? 34 : 28} fill={on ? color : '#fff'} stroke={C.navy} strokeWidth="6" />
-            <text y="12" textAnchor="middle" fontFamily="'Volkswagen Serial', Montserrat, sans-serif" fontWeight="800" fontSize="34" fill={on ? '#fff' : C.navy}>{i + 1}</text>
+          <g key={i} transform={`translate(${pt.x} ${pt.y - 70})`}>
+            <path d="M0 52 L-14 26 A28 28 0 1 1 14 26 Z" fill={on ? color : '#fff'} stroke={C.navy} strokeWidth="5" transform={`scale(${pulse})`} />
+            <text y="12" textAnchor="middle" fontFamily="'Volkswagen Serial', Montserrat, sans-serif" fontWeight="800" fontSize="30" fill={on ? '#fff' : C.navy}>{i + 1}</text>
+            {labels[i] && (
+              <g opacity={on ? 1 : 0.0}>
+                <rect x={lx > 0 ? 34 : -34 - labels[i].length * 15} y="-20" width={labels[i].length * 15} height="38" rx="19" fill={C.navy} />
+                <text x={lx > 0 ? 34 + (labels[i].length * 15) / 2 : -34 - (labels[i].length * 15) / 2} y="8" textAnchor="middle" fontFamily="'Volkswagen Serial', Montserrat, sans-serif" fontWeight="800" fontSize="24" fill="#fff">{labels[i]}</text>
+              </g>
+            )}
           </g>
         );
       })}
-      <g transform={`translate(${car.x} ${car.y}) rotate(${ang})`}>
-        <rect x="-30" y="-14" width="60" height="28" rx="12" fill={C.white} stroke={C.navy} strokeWidth="4" />
-        <rect x="-6" y="-9" width="22" height="18" rx="6" fill={C.yellow} />
-        <rect x="24" y="-18" width="10" height="36" rx="3" fill={C.red} />
-        <rect x="-36" y="-18" width="8" height="36" rx="3" fill={C.red} />
+      {/* carro MiRed (vista superior) */}
+      <g transform={`translate(${car.x} ${car.y}) rotate(${ang})`} filter="url(#carShadow)">
+        <image href={staticFile('img/carro-top.png')} x="-66" y="-29" width="132" height="58" />
       </g>
     </svg>
   );

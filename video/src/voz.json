@@ -5,12 +5,12 @@
       {
         "text": "¡Pilotos de MiRed IPS, enciendan motores!",
         "file": "audio/voz/l1.mp3",
-        "frames": 98
+        "frames": 96
       },
       {
         "text": "Celebramos el Día Mundial de la Calidad con el Gran Premio de la Calidad.",
         "file": "audio/voz/l2.mp3",
-        "frames": 115
+        "frames": 124
       }
     ]
   },
@@ -20,7 +20,7 @@
       {
         "text": "Para fortalecer la seguridad del paciente, la gestión de riesgos, la medición, el análisis de problemas, la mejora continua, la experiencia del usuario y el trabajo en equipo.",
         "file": "audio/voz/l3.mp3",
-        "frames": 328
+        "frames": 311
       }
     ]
   },
@@ -30,7 +30,7 @@
       {
         "text": "Primera vuelta, lunes treinta de noviembre: recorrido por sedes. Paso Palmas, Paso Galán y Camino Ciudadela, de ocho y treinta a una de la tarde.",
         "file": "audio/voz/l4.mp3",
-        "frames": 283
+        "frames": 278
       }
     ]
   },
@@ -40,7 +40,7 @@
       {
         "text": "Segunda vuelta, miércoles dos de diciembre: Pit Lane, experiencias exitosas. Auditorio Rómulo Rodado, CUD Adelita de Char, de ocho y treinta a una de la tarde.",
         "file": "audio/voz/l5.mp3",
-        "frames": 371
+        "frames": 313
       }
     ]
   },
@@ -50,7 +50,7 @@
       {
         "text": "Gran final, jueves tres de diciembre: ¡La Gran Carrera de la Calidad! Auditorio Rómulo Rodado y lobby del CUD Adelita de Char, de ocho de la mañana a cuatro y treinta de la tarde.",
         "file": "audio/voz/l6.mp3",
-        "frames": 329
+        "frames": 331
       }
     ]
   },
@@ -60,12 +60,12 @@
       {
         "text": "Y recuerda: las oportunidades de mejora son parte del proceso.",
         "file": "audio/voz/l7.mp3",
-        "frames": 115
+        "frames": 114
       },
       {
         "text": "Por eso cumplimos el ciclo: planear, hacer, verificar o estudiar, y actuar.",
         "file": "audio/voz/l8.mp3",
-        "frames": 168
+        "frames": 157
       }
     ]
   },
@@ -80,7 +80,7 @@
       {
         "text": "Es avanzar juntos, de forma segura y haciendo las cosas bien.",
         "file": "audio/voz/l10.mp3",
-        "frames": 115
+        "frames": 116
       }
     ]
   },
@@ -90,7 +90,7 @@
       {
         "text": "Gran Premio de la Calidad, MiRed IPS. ¡Te esperamos en la pista!",
         "file": "audio/voz/l11.mp3",
-        "frames": 138
+        "frames": 133
       }
     ]
   }

@@ -25,7 +25,7 @@ export const GranPremio: React.FC = () => (
       <TransitionSeries.Transition presentation={slide({direction: 'from-right'})} timing={springTiming({durationInFrames: T, config: {damping: 200}})} />
       <TransitionSeries.Sequence durationInFrames={d('evento1')}>
         <SceneEvento id="evento1" lap="Vuelta 1 · Recorrido" weekday="LUNES" day="30" month="NOV" title="Recorrido por sedes"
-          place={[]} stops={['Paso Palmas', 'Paso Galán', 'Camino Ciudadela']} time="8:30 a. m. – 1:00 p. m." color={C.teal} art={(p) => <Track progress={p} stops={STOPS} color={C.teal} width={560} />} clip={2} />
+          place={[]} stops={['Paso Palmas', 'Paso Galán', 'Camino Ciudadela']} time="8:30 a. m. – 1:00 p. m." color={C.teal} art={(p) => <Track progress={p} stops={STOPS} color={C.teal} width={1000} labels={['Paso Palmas', 'Paso Galán', 'Camino Ciudadela']} />} wide clip={2} />
       </TransitionSeries.Sequence>
       <TransitionSeries.Transition presentation={slide({direction: 'from-right'})} timing={springTiming({durationInFrames: T, config: {damping: 200}})} />
       <TransitionSeries.Sequence durationInFrames={d('evento2')}>

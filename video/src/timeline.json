@@ -1,119 +1,119 @@
 {
   "fps": 30,
   "transition": 15,
-  "total": 2310,
+  "total": 2223,
   "lights": [
     6,
     22,
-    39,
-    55,
-    71
+    38,
+    54,
+    70
   ],
-  "lightsOut": 106,
+  "lightsOut": 104,
   "cuts": [
-    228,
-    571,
-    869,
-    1255,
-    1599,
-    1905,
-    2092
+    235,
+    561,
+    854,
+    1182,
+    1528,
+    1822,
+    2010
   ],
   "scenes": [
     {
       "scene": "intro",
       "start": 0,
-      "duration": 243,
+      "duration": 250,
       "lines": [
         {
           "text": "¡Pilotos de MiRed IPS, enciendan motores!",
           "file": "audio/voz/l1.mp3",
-          "frames": 98,
+          "frames": 96,
           "from": 6
         },
         {
           "text": "Celebramos el Día Mundial de la Calidad con el Gran Premio de la Calidad.",
           "file": "audio/voz/l2.mp3",
-          "frames": 115,
-          "from": 112
+          "frames": 124,
+          "from": 110
         }
       ]
     },
     {
       "scene": "objetivo",
-      "start": 228,
-      "duration": 358,
+      "start": 235,
+      "duration": 341,
       "lines": [
         {
           "text": "Para fortalecer la seguridad del paciente, la gestión de riesgos, la medición, el análisis de problemas, la mejora continua, la experiencia del usuario y el trabajo en equipo.",
           "file": "audio/voz/l3.mp3",
-          "frames": 328,
+          "frames": 311,
           "from": 14
         }
       ]
     },
     {
       "scene": "evento1",
-      "start": 571,
-      "duration": 313,
+      "start": 561,
+      "duration": 308,
       "lines": [
         {
           "text": "Primera vuelta, lunes treinta de noviembre: recorrido por sedes. Paso Palmas, Paso Galán y Camino Ciudadela, de ocho y treinta a una de la tarde.",
           "file": "audio/voz/l4.mp3",
-          "frames": 283,
+          "frames": 278,
           "from": 14
         }
       ]
     },
     {
       "scene": "evento2",
-      "start": 869,
-      "duration": 401,
+      "start": 854,
+      "duration": 343,
       "lines": [
         {
           "text": "Segunda vuelta, miércoles dos de diciembre: Pit Lane, experiencias exitosas. Auditorio Rómulo Rodado, CUD Adelita de Char, de ocho y treinta a una de la tarde.",
           "file": "audio/voz/l5.mp3",
-          "frames": 371,
+          "frames": 313,
           "from": 14
         }
       ]
     },
     {
       "scene": "evento3",
-      "start": 1255,
-      "duration": 359,
+      "start": 1182,
+      "duration": 361,
       "lines": [
         {
           "text": "Gran final, jueves tres de diciembre: ¡La Gran Carrera de la Calidad! Auditorio Rómulo Rodado y lobby del CUD Adelita de Char, de ocho de la mañana a cuatro y treinta de la tarde.",
           "file": "audio/voz/l6.mp3",
-          "frames": 329,
+          "frames": 331,
           "from": 14
         }
       ]
     },
     {
       "scene": "phva",
-      "start": 1599,
-      "duration": 321,
+      "start": 1528,
+      "duration": 309,
       "lines": [
         {
           "text": "Y recuerda: las oportunidades de mejora son parte del proceso.",
           "file": "audio/voz/l7.mp3",
-          "frames": 115,
+          "frames": 114,
           "from": 14
         },
         {
           "text": "Por eso cumplimos el ciclo: planear, hacer, verificar o estudiar, y actuar.",
           "file": "audio/voz/l8.mp3",
-          "frames": 168,
-          "from": 137
+          "frames": 157,
+          "from": 136
         }
       ]
     },
     {
       "scene": "frase",
-      "start": 1905,
-      "duration": 202,
+      "start": 1822,
+      "duration": 203,
       "lines": [
         {
           "text": "La meta no es llegar primero.",
@@ -124,20 +124,20 @@
         {
           "text": "Es avanzar juntos, de forma segura y haciendo las cosas bien.",
           "file": "audio/voz/l10.mp3",
-          "frames": 115,
+          "frames": 116,
           "from": 71
         }
       ]
     },
     {
       "scene": "cierre",
-      "start": 2092,
-      "duration": 218,
+      "start": 2010,
+      "duration": 213,
       "lines": [
         {
           "text": "Gran Premio de la Calidad, MiRed IPS. ¡Te esperamos en la pista!",
           "file": "audio/voz/l11.mp3",
-          "frames": 138,
+          "frames": 133,
           "from": 14
         }
       ]
